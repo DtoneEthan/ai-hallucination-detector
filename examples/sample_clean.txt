@@ -1,0 +1,13 @@
+This is a sample of well-sourced, factual text for comparison.
+
+The Python programming language was created by Guido van Rossum and was first released on February 20, 1991. According to the official Python documentation, Python 3.0 was released on December 3, 2008.
+
+The World Wide Web was invented by Tim Berners-Lee in 1989 at CERN. The first website was published on August 6, 1991, and is still accessible at https://info.cern.ch.
+
+According to the Python Package Index (PyPI), the requests library has been downloaded billions of times. Its documentation is available at https://docs.python-requests.org.
+
+The arXiv preprint repository, founded in 1991, hosts over 2 million scholarly articles. A notable paper on transformers is available at arXiv:1706.03762.
+
+The Linux kernel was first released by Linus Torvalds in 1991. The source code is hosted at https://github.com/torvalds/linux.
+
+These facts can be verified through their primary sources. Each claim above includes a verifiable citation or URL.
