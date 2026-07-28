@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI 幻觉检测 · 在线版</title>
+<meta name="description" content="在线 AI 幻觉检测器：粘贴文本即可检测，无需安装 Python。声明提取、模式分析、URL/引用核验与风险评分。" />
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1f2328; --muted:#656d76; --line:#d0d7de;
+    --brand:#5b21b6; --brand-soft:#f3eefb;
+    --crit:#e0245e; --high:#fb8500; --med:#eab308; --low:#2da44e; --info:#0969da;
+    --card:#f6f8fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Helvetica,Arial,sans-serif;
+       color:var(--fg);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--brand);text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
+  header.nav{border-bottom:1px solid var(--line)}
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
+  .logo{font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+  .nav a.lnk{font-size:13px;color:var(--muted);margin-left:16px}
+  .hero{padding:40px 0 18px;text-align:center}
+  .hero h1{font-size:32px;letter-spacing:-.4px}
+  .hero h1 .accent{color:var(--brand)}
+  .hero p.sub{color:var(--muted);margin:12px auto 0;max-width:600px;font-size:15px}
+  section{padding:22px 0}
+  .input-card{border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--card)}
+  textarea{width:100%;min-height:200px;resize:vertical;border:1px solid var(--line);border-radius:10px;
+    padding:14px;font-size:14.5px;font-family:inherit;line-height:1.55;background:#fff;color:var(--fg)}
+  textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .examples{display:flex;gap:8px;flex-wrap:wrap}
+  .examples button,.dl button{font-size:13px;border:1px solid var(--line);background:#fff;color:var(--fg);
+    padding:7px 12px;border-radius:8px;cursor:pointer}
+  .examples button:hover{background:var(--card)}
+  .run{background:var(--brand);color:#fff;border:0;padding:11px 26px;border-radius:9px;font-weight:700;font-size:15px;cursor:pointer}
+  .run:hover{background:#4c1d95}
+  .run:disabled{opacity:.6;cursor:default}
+  .count{font-size:12px;color:var(--muted)}
+  .note{font-size:12.5px;color:var(--muted);background:#fff8e6;border:1px solid #f0d58c;border-radius:10px;
+    padding:10px 14px;margin-top:14px}
+  .result{margin-top:8px}
+  .score-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:18px}
+  .score-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap;gap:12px}
+  .gauge{display:flex;align-items:center;gap:16px}
+  .gauge svg{width:120px;height:120px}
+  .gauge .score{font-size:30px;font-weight:800}
+  .gauge .lvl{font-weight:700;letter-spacing:.5px;font-size:14px}
+  .sev-bars{margin-left:auto;min-width:240px;flex:1}
+  .sev-row{display:flex;align-items:center;gap:8px;font-size:13px;margin:5px 0}
+  .sev-row .lab{width:72px;color:var(--muted)}
+  .sev-row .bar{flex:1;height:9px;border-radius:5px;background:var(--card);overflow:hidden}
+  .sev-row .bar i{display:block;height:100%}
+  .sev-row .num{width:22px;text-align:right;font-variant-numeric:tabular-nums}
+  .block{padding:18px 22px}
+  .block h3{font-size:15px;margin-bottom:12px;color:var(--muted)}
+  .finding{border-left:4px solid var(--line);padding:9px 13px;margin:9px 0;background:var(--card);border-radius:0 8px 8px 0;font-size:13.5px}
+  .finding.crit{border-color:var(--crit)} .finding.high{border-color:var(--high)}
+  .finding.med{border-color:var(--med)} .finding.low{border-color:var(--low)}
+  .finding .tag{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .finding.crit .tag{color:var(--crit)} .finding.high .tag{color:var(--high)}
+  .finding.med .tag{color:#a16207} .finding.low .tag{color:var(--low)}
+  .finding .msg{margin:2px 0}
+  .finding .snip{color:var(--muted);font-size:12.5px}
+  .finding .sug{color:var(--info);font-size:12.5px}
+  .claim{border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin:8px 0;font-size:13px}
+  .claim .ct{font-weight:700;color:var(--brand)}
+  .claim .vb{height:7px;border-radius:4px;background:var(--card);overflow:hidden;margin:5px 0}
+  .claim .vb i{display:block;height:100%;background:var(--brand)}
+  .claim .ri{color:#a16207;font-size:12px}
+  .empty{color:var(--low);font-weight:600;padding:8px 0}
+  footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:30px}
+  footer .studio{font-weight:700;color:var(--brand);margin-top:8px}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <div class="logo"><span class="dot"></span> AI 幻觉检测</div>
+    <div>
+      <a class="lnk" href="index.html">展示页</a>
+      <a class="lnk" href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>AI 幻觉检测 · <span class="accent">在线版</span></h1>
+    <p class="sub">把 AI 生成的文字粘进来，点一下就能看出哪里可能「一本正经地胡说」。无需安装 Python，浏览器里直接跑。</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="input-card">
+      <textarea id="input" placeholder="在此粘贴要检测的文本（中英文均可）……&#10;例如：根据 2024 年某研究院的研究，87.3% 的用户更偏好 AI 生成内容，详见 https://www.research-paper.com/xxx"></textarea>
+      <div class="toolbar">
+        <div class="examples">
+          <button onclick="fillExample('ai')">示例：含幻觉文本</button>
+          <button onclick="fillExample('clean')">示例：正常文本</button>
+          <button onclick="clearInput()">清空</button>
+        </div>
+        <span class="count" id="count">0 字</span>
+        <button class="run" id="runBtn" onclick="runDetection()">开始检测</button>
+      </div>
+      <div class="note">
+        ⚠️ 网页版只做<b>离线启发式分析</b>（声明提取、语言模式、可疑域名、虚构实体等）。
+        URL 实时可达性、联网事实核查需使用 <a href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">Python 版</a>（<code>--online</code>）。本工具基于规则，不保证 100% 准确，关键声明请人工复核。
+      </div>
+    </div>
+
+    <div class="result hide" id="result">
+      <div class="score-card">
+        <div class="score-head">
+          <div class="gauge">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#f6f8fa" stroke-width="11"/>
+              <circle id="gaugeArc" cx="60" cy="60" r="52" fill="none" stroke="#2da44e" stroke-width="11"
+                stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
+                transform="rotate(-90 60 60)"/>
+            </svg>
+            <div>
+              <div class="score" id="scoreNum">0</div>
+              <div class="lvl" id="scoreLvl">LOW</div>
+            </div>
+          </div>
+          <div class="sev-bars" id="sevBars"></div>
+        </div>
+        <div class="block">
+          <h3>主要问题（按严重程度排序）</h3>
+          <div id="findings"></div>
+        </div>
+        <div class="block">
+          <h3>提取到的声明</h3>
+          <div id="claims"></div>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:14px;justify-content:flex-end">
+        <button class="run" onclick="downloadReport()">下载检测报告 (.md)</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>AI Hallucination Detector · 基于启发式规则，无法保证 100% 准确，关键声明请人工复核。</p>
+    <p><a href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">github.com/DtoneEthan/ai-hallucination-detector</a> · MIT License</p>
+    <p class="studio">Ethan X 工作室出品 · Produced by Ethan X Studio</p>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   Port of the Python AI Hallucination Detector (offline logic)
+   Modules: utils · pattern_analyzer · url_verifier · claim_extractor · fact_checker · scorer
+   ============================================================ */
+
+// ---------- utils ----------
+function splitSentences(text){
+  text = (text||'').trim();
+  if(!text) return [];
+  const pattern = /(?<=[.!?])\s+|(?<=[.!?])$|(?<=[。！？；])/;
+  const raw = text.split(pattern);
+  const sentences = [];
+  for(const part of raw){
+    const subs = part.split(/\n{2,}/);
+    for(const sp of subs){
+      const s = sp.trim();
+      if(!s) continue;
+      const lines = s.split('\n');
+      let cur = '';
+      for(const line of lines){
+        const l = line.trim();
+        if(!l) continue;
+        if(cur){
+          if(/[.!?。！？；]$/.test(cur)){ sentences.push(cur); cur = l; }
+          else cur += ' ' + l;
+        } else cur = l;
+      }
+      if(cur) sentences.push(cur);
+    }
+  }
+  return sentences.length ? sentences : [text];
+}
+function extractNumbers(text){
+  const re = /(?:[$￥€£]\s?)?\d[\d,]*(?:\.\d+)?(?:%|\s?(?:million|billion|trillion|thousand|万|亿|百万|千万))?/g;
+  return text.match(re) || [];
+}
+function extractUrls(text){
+  const re = /https?:\/\/[^\s<>"')]+(?:[^\s<>"').,;:!?])/g;
+  return text.match(re) || [];
+}
+function extractDates(text){
+  const patterns = [
+    /\b(?:19|20)\d{2}\b/g,
+    /\b(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2}(?:,)?\s*(?:19|20)?\d{2}?\b/g,
+    /\b\d{1,2}\/\d{1,2}\/(?:19|20)\d{2}\b/g,
+    /\b\d{4}年\d{1,2}月\d{1,2}日\b/g
+  ];
+  let res = [];
+  for(const p of patterns) res = res.concat(text.match(p) || []);
+  return res;
+}
+function extractQuotes(text){
+  let q = [];
+  q = q.concat(text.match(/"([^"]{5,})"/g) || []);
+  q = q.concat(text.match(/(?<!\w)'([^']{5,})'/g) || []);
+  q = q.concat(text.match(/“([^”]{5,})”/g) || []);
+  q = q.concat(text.match(/『([^』]{5,})』/g) || []);
+  return q.map(s => s.slice(1,-1));
+}
+function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
+function textSimilarity(a, b){
+  if(!a || !b) return 0;
+  function ngrams(t, n){
+    t = t.toLowerCase().trim();
+    if(t.length < n) return new Set([t]);
+    const s = new Set();
+    for(let i=0;i<=t.length-n;i++) s.add(t.substr(i,n));
+    return s;
+  }
+  const ga = ngrams(a), gb = ngrams(b);
+  let inter = 0; ga.forEach(x => { if(gb.has(x)) inter++; });
+  const union = new Set([...ga, ...gb]).size;
+  return union ? inter/union : 0;
+}
+
+// ---------- pattern_analyzer ----------
+const PA = {
+  HYPER_SPECIFIC_NUMBER: /\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b|\b\d{4,}(?:\.\d+)?\b/g,
+  VERSION_PATTERN: /v?\d+\.\d+\.\d+(?:\.\d+)?/g,
+  REAL_FRAMEWORKS: new Set(['React','Vue','Angular','Svelte','Next.js','Nuxt','Django','Flask','FastAPI','Spring','Express','TensorFlow','PyTorch','scikit-learn','Keras','JAX','Pandas','NumPy','SciPy','Matplotlib','Plotly','LangChain','LlamaIndex','Transformers']),
+  HEDGE_PATTERNS: [
+    /\b(?:may|might|could|possibly|potentially|arguably|purportedly|reportedly|allegedly)\b/i,
+    /\b(?:it is (?:said|believed|thought|reported|claimed|argued|suggested))\b/i,
+    /\b(?:some (?:experts|sources|studies|researchers)|many (?:believe|think|argue))\b/i,
+    /(?:据说|据称|有人(?:认为|说)|有(?:研究|报告|调查)(?:表明|显示|指出)|可能|或许|大概|也许)/
+  ],
+  OVERCONFIDENCE_PATTERNS: [
+    /\b(?:undoubtedly|undeniably|indisputably|without (?:a )?doubt|beyond (?:any )?doubt|clearly|obviously|evidently|manifestly)\b/i,
+    /\b(?:it is (?:well )?known|it is widely (?:accepted|recognized|acknowledged|believed)|universally)\b/i,
+    /\b(?:definitely|certainly|absolutely|positively|invariably)\b/i,
+    /(?:毫无疑问|众所周知|不言而喻|绝对|确实|的确|毫无疑问地)/
+  ],
+  FLAVOR_TEXT_PATTERNS: [
+    /In today's (?:rapidly )?(?:evolving|changing|fast-paced) world/i,
+    /It is important to note that/i,
+    /It's worth (?:noting|mentioning|considering) that/i,
+    /(?:As|Since) we (?:all know|navigate|move|enter)/i,
+    /(?:At the end of the day|In conclusion|To summarize)/i,
+    /(?:Furthermore|Moreover|Additionally|In addition),/i,
+    /plays a (?:crucial|vital|pivotal|significant|key) (?:role|part)/i,
+    /在当今(?:社会|时代|世界)/,
+    /随着(?:社会|时代|科技)的(?:发展|进步)/,
+    /众所周知/,
+    /值得一提/
+  ],
+  FAKE_STUDY_PATTERNS: [
+    /A (?:recent )?(?:study|survey|report|research) (?:conducted|published|released) by\s+([^,.]+)/i,
+    /(?:According to|Based on) a (?:recent )?(?:study|survey|report) by\s+([^,.]+)/i,
+    /研究表明[^，。]*?(?:发现|显示|指出)/
+  ],
+  analyze(text){
+    const F = [];
+    const sentences = splitSentences(text);
+    this._hyper(F, text, sentences);
+    this._hedge(F, text);
+    this._overconf(F, text);
+    this._flavor(F, text);
+    this._fakeStudies(F, text, sentences);
+    this._contradictions(F, sentences);
+    this._repetition(F, text, sentences);
+    this._entities(F, text);
+    return F;
+  },
+  _hyper(F, text, sentences){
+    for(let idx=0; idx<sentences.length; idx++){
+      const s = sentences[idx];
+      const nums = s.match(this.HYPER_SPECIFIC_NUMBER) || [];
+      for(const num of nums){
+        if(/arxiv/i.test(s)) continue;
+        const digits = num.replace(/[^0-9]/g,'');
+        if(digits.length >= 7){
+          const ctx = [/(users?|people|customers?|articles?|papers?|studies?|cases?|instances?)/i, /(用户|人|文章|论文|研究|案例|实例)/];
+          const isStat = ctx.some(p => p.test(s));
+          if(isStat){
+            F.push({severity:'MEDIUM', category:'hyper_specific_number',
+              message:`非常具体的数字 (${num}) 出现在事实语境中 —— 请核实`, snippet:s.slice(0,120),
+              location:`第 ${idx+1} 句`, suggestion:`搜索这个确切数字：${num}`, confidence:0.55});
+          }
+        }
+      }
+    }
+  },
+  _countAll(text, p){
+    const re = new RegExp(p.source, p.flags.includes('g') ? p.flags : p.flags + 'g');
+    return text.match(re) || [];
+  },
+  _hedge(F, text){
+    let total = 0; const loc = [];
+    for(const p of this.HEDGE_PATTERNS){
+      const mm = this._countAll(text, p);
+      if(mm.length){ total += mm.length; loc.push(...mm); }
+    }
+    const wc = text.trim().split(/\s+/).filter(Boolean).length || 1;
+    const density = total / wc;
+    if(density > 0.03){
+      F.push({severity:'MEDIUM', category:'excessive_hedging',
+        message:`过多模糊措辞（${total} 处，占文本 ${Math.round(density*100)}%）—— 模型可能不确定`, snippet:loc.slice(0,5).join(', '),
+        suggestion:'模糊措辞不等于幻觉，但高比例常与编造内容相关', confidence:0.45});
+    }
+  },
+  _overconf(F, text){
+    let total = 0; const loc = [];
+    for(const p of this.OVERCONFIDENCE_PATTERNS){
+      const mm = this._countAll(text, p);
+      if(mm.length){ total += mm.length; loc.push(...mm); }
+    }
+    if(total >= 3){
+      F.push({severity:'LOW', category:'excessive_overconfidence',
+        message:`多处绝对化断言（${total} 处）—— 编造内容常用过度自信的语气`, snippet:loc.slice(0,5).join(', '),
+        suggestion:'对使用绝对化语言的声明要格外仔细核实', confidence:0.35});
+    }
+  },
+  _flavor(F, text){
+    let total = 0; const loc = [];
+    for(const p of this.FLAVOR_TEXT_PATTERNS){
+      const mm = this._countAll(text, p);
+      if(mm.length){ total += mm.length; loc.push(...mm.map(x=>x.slice(0,50))); }
+    }
+    if(total >= 3){
+      F.push({severity:'LOW', category:'excessive_flavor_text',
+        message:`高频通用套话（${total} 处）—— 内容可能用 AI 生成的模板填充`, snippet:loc.slice(0,4).join(' | '),
+        suggestion:'套话本身不是幻觉，但常伴随编造内容出现', confidence:0.25});
+    }
+  },
+  _fakeStudies(F, text, sentences){
+    const suspicious = ['the Institute','the Research Center','the Data Lab','the Innovation Group','the Analysis Group','the Study Center'];
+    for(let idx=0; idx<sentences.length; idx++){
+      const s = sentences[idx];
+      for(const p of this.FAKE_STUDY_PATTERNS){
+        const m = s.match(p);
+        if(m){
+          let source = m[1] ? m[1].trim() : 'unknown';
+          const isSusp = suspicious.some(x => source.toLowerCase().includes(x.toLowerCase()));
+          const hasOrg = /[A-Z][a-z]+\s+(?:University|Institute|Lab|Center|Foundation|Society|Association)/.test(source);
+          const sev = isSusp ? 'HIGH' : (hasOrg ? 'LOW' : 'MEDIUM');
+          const conf = isSusp ? 0.7 : (hasOrg ? 0.3 : 0.45);
+          F.push({severity:sev, category:'possibly_fake_study',
+            message:`引用了「${source}」的研究 —— 请核实该机构与研究是否真实存在`, snippet:s.slice(0,120),
+            location:`第 ${idx+1} 句`, suggestion:`搜索："${source}" 验证其存在`, confidence:conf});
+          break;
+        }
+      }
+    }
+  },
+  _contradictions(F, sentences){
+    const claims = [];
+    for(let idx=0; idx<sentences.length; idx++){
+      const nums = extractNumbers(sentences[idx]);
+      for(const num of nums){
+        const mm = num.match(/[\d,.]+/);
+        if(!mm) continue;
+        const clean = mm[0].replace(/,/g,'');
+        let val;
+        try{ val = clean.includes('.') ? parseFloat(clean) : parseInt(clean); }catch(e){ continue; }
+        if(!(val > 0)) continue;
+        claims.push([val, num, idx, sentences[idx]]);
+      }
+    }
+    for(let i=0;i<claims.length;i++){
+      for(let j=i+1;j<claims.length;j++){
+        const [v1,r1,i1,s1] = claims[i], [v2,r2,i2,s2] = claims[j];
+        if(Math.abs(i1-i2) > 10 || i1===i2 || v1===v2) continue;
+        if(textSimilarity(s1, s2) > 0.4){
+          F.push({severity:'HIGH', category:'internal_contradiction',
+            message:`可能存在自相矛盾：'${r1}' 与 '${r2}' 出现在相似语境`, snippet:`"${s1.slice(0,80)}..." 与 "${s2.slice(0,80)}..."`,
+            location:`第 ${i1+1} 句 对比 第 ${i2+1} 句`, suggestion:'检查这两者是否指同一指标 —— 自相矛盾是幻觉信号', confidence:0.6});
+        }
+      }
+    }
+  },
+  _repetition(F, text, sentences){
+    const counts = {};
+    for(const s of sentences){
+      const words = s.toLowerCase().split(/\s+/).filter(Boolean);
+      for(let i=0;i<words.length-2;i++){
+        const ph = words.slice(i,i+3).join(' ');
+        if(ph.length > 10) counts[ph] = (counts[ph]||0)+1;
+      }
+    }
+    for(const ph in counts){
+      if(counts[ph] >= 3){
+        F.push({severity:'LOW', category:'repetitive_phrasing',
+          message:`短语重复 ${counts[ph]} 次：'${ph}'`, snippet:ph,
+          suggestion:'重复可能意味着 AI 生成的填充内容而非实质内容', confidence:0.2});
+      }
+    }
+  },
+  _entities(F, text){
+    const idRe = /\b([A-Z][a-z]+(?:[A-Z][a-z]+)+)\b/g;
+    const snakeRe = /\b([a-z][a-z_]*_[a-z_]+)\b/g;
+    const set = new Set();
+    let m;
+    while((m = idRe.exec(text))){
+      const e = m[1];
+      if(!this.REAL_FRAMEWORKS.has(e) && e.length>6 && !['JavaScript','TypeScript','GitHub','StackOverflow'].includes(e)) set.add(e);
+    }
+    while((m = snakeRe.exec(text))){
+      if(m[1].length > 8) set.add(m[1]);
+    }
+    const lower = text.toLowerCase();
+    const techCtx = ['api','function','method','library','package','import','install','version'].some(k => lower.includes(k));
+    if(techCtx){
+      let n=0;
+      for(const e of set){
+        if(n++ >= 10) break;
+        F.push({severity:'MEDIUM', category:'possible_fake_entity',
+          message:`技术实体 '${e}' 可能不存在 —— 请核实它是真实库/API/方法`, snippet:e,
+          suggestion:`在官方文档或包仓库中搜索 '${e}'`, confidence:0.4});
+      }
+    }
+  }
+};
+
+// ---------- url_verifier (offline) ----------
+const UV = {
+  VALID_TLDS: new Set(['.com','.org','.net','.edu','.gov','.io','.ai','.co','.dev','.app','.info','.biz','.me','.xyz','.tech',
+    '.cn','.jp','.kr','.uk','.de','.fr','.au','.ca','.ch','.nl','.se','.no','.fi','.dk','.be','.at','.es','.it','.pt','.br','.mx','.ar','.in','.id',
+    '.ru','.ua','.pl','.cz','.hu','.ro','.gr','.ie','.nz','.za','.sg','.hk','.tw','.th','.my','.ph','.vn','.tr','.il','.ae','.sa','.eg','.ng','.ke']),
+  HALLUCINATED_HINTS: ['research-paper','academic-source','study-findings','official-source','verified-data','credible-source'],
+  _host(url){
+    const m = url.match(/^https?:\/\/([^\/\s]+)/i);
+    return m ? m[1].toLowerCase() : '';
+  },
+  verify(text){
+    const F = [];
+    const urls = extractUrls(text);
+    for(const url of urls){
+      const host = this._host(url);
+      if(!host) continue;
+      let found = null;
+      if(/\.(fake|test|example|invalid|localhost)\b/i.test(host))
+        found = {severity:'HIGH', category:'suspicious_url', message:`URL 含可疑模式：已知伪造/测试域名`, snippet:url, location:`domain: ${host}`, suggestion:'请手动核实该 URL，可能为编造', confidence:0.85};
+      else if(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/.test(host))
+        found = {severity:'HIGH', category:'suspicious_url', message:`URL 使用 IP 地址而非域名`, snippet:url, location:`domain: ${host}`, suggestion:'请手动核实该 URL', confidence:0.85};
+      else if(/(.)\1{4,}/.test(host))
+        found = {severity:'HIGH', category:'suspicious_url', message:`域名含可疑重复字符`, snippet:url, location:`domain: ${host}`, suggestion:'请手动核实该 URL', confidence:0.85};
+      else {
+        for(const hint of this.HALLUCINATED_HINTS){
+          if(host.includes(hint)){
+            found = {severity:'CRITICAL', category:'fake_url_domain', message:`域名含典型虚构模式：'${hint}'`, snippet:url, location:`domain: ${host}`, suggestion:'这个 URL 极可能是 AI 编造的', confidence:0.95};
+            break;
+          }
+        }
+      }
+      if(found){ F.push(found); continue; }
+      const tld = '.' + host.split('.').pop();
+      if(tld && !this.VALID_TLDS.has(tld)){
+        F.push({severity:'MEDIUM', category:'unknown_tld', message:`URL 使用了无法识别的顶级域名：${tld}`, snippet:url, location:`domain: ${host}`, suggestion:'请核实该域名是否真实存在', confidence:0.5});
+      }
+    }
+    return F;
+  }
+};
+
+// ---------- claim_extractor ----------
+const CE = {
+  CITATION_PATTERNS: [
+    /according to\s+[^,.]+/i, /stated by\s+[^,.]+/i, /reported (?:by|in)\s+[^,.]+/i, /published in\s+[^,.]+/i,
+    /研究(?:表明|发现|显示)/, /根据[^，。]+/, /据(?:报道|统计|调查)/,
+    /(?:Smith|Johnson|Brown|Wilson|Taylor|Lee|Wang|Zhang|Li|Liu|Chen)\s+et\s+al\.?/i, /et al\.?/i,
+    /\(?\d{4}\)?\s*,?\s*p\.?\s*\d+/i
+  ],
+  HISTORICAL_PATTERNS: [
+    /(?:in|during|since|before|after)\s+(?:1[5-9]\d{2}|20\d{2})/i,
+    /(?:born|died|founded|established|created|invented)\s+(?:in\s+)?(?:1[5-9]\d{2}|20\d{2})/i,
+    /\d{4}年/, /(?:春秋|战国|秦|汉|唐|宋|元|明|清)(?:时期|年间|代)/
+  ],
+  CAUSAL_PATTERNS: [/\b(?:causes?|leads? to|results? in|due to|because of|effect of|impact of)\b/i, /(?:导致|引起|使得|由于|因为|影响|作用)/],
+  TECHNICAL_PATTERNS: [
+    /\b(?:API|function|method|class|module|library|package|framework|SDK)\b/i,
+    /\b(?:endpoint|parameter|argument|return value|callback)\b/i,
+    /[a-zA-Z_][a-zA-Z0-9_]*\(\)/, /[a-zA-Z_][a-zA-Z0-9_]*\.[a-zA-Z_][a-zA-Z0-9_]*/
+  ],
+  HEDGE_WORDS: new Set(['reportedly','allegedly','supposedly','purportedly','it is said','it is believed','it is thought','some sources','many believe','据说','据称','有人认为','有传言称','据信']),
+  ABSOLUTE_WORDS: new Set(['definitely','certainly','undoubtedly','without question','it is well known','it is widely recognized','always','never','all','none','毫无疑问','众所周知','确实','绝对']),
+  extract(text){
+    const sentences = splitSentences(text);
+    const claims = [];
+    for(const sentence of sentences){
+      if(sentence.trim().length < 15) continue;
+      const ev = [], ri = [];
+      let type = null, ver = 0;
+      const nums = extractNumbers(sentence);
+      if(nums.length){
+        ev.push(...nums); type = 'numerical'; ver = 0.8;
+        for(const n of nums){
+          const d = n.replace(/[^0-9]/g,'');
+          if(d.length > 6){ ri.push('高度具体的数字：'+n); ver = Math.max(ver-0.1, 0.3); }
+        }
+      }
+      for(const p of this.CITATION_PATTERNS){
+        const m = sentence.match(p);
+        if(m){ type = type || 'citation'; ev.push(m[0]); ver = Math.max(ver, 0.7); break; }
+      }
+      const dates = extractDates(sentence);
+      if(dates.length){ ev.push(...dates); if(type===null) type='historical'; ver = Math.max(ver, 0.6); }
+      for(const p of this.CAUSAL_PATTERNS){ if(p.test(sentence)){ if(type===null) type='causal'; ver=Math.max(ver,0.4); break; } }
+      for(const p of this.TECHNICAL_PATTERNS){
+        const m = sentence.match(p);
+        if(m){ if(type===null) type='technical'; ev.push(m[0]); ver=Math.max(ver,0.5); break; }
+      }
+      const quotes = extractQuotes(sentence);
+      if(quotes.length){ ev.push(...quotes); ri.push('含引用文本 —— 请核实来源'); ver=Math.max(ver,0.6); }
+      const low = sentence.toLowerCase();
+      this.HEDGE_WORDS.forEach(w => { if(low.includes(w)){ ri.push("模糊措辞：'"+w+"'"); ver -= 0.15; } });
+      this.ABSOLUTE_WORDS.forEach(w => { if(low.includes(w)){ ri.push("绝对化语言：'"+w+"'"); ver -= 0.1; } });
+      if(type===null){
+        if(/[A-Z][a-z]+/.test(sentence) || /[一-龥]{2,}(?:是|有|为|可以|能够)/.test(sentence)){ type='other'; ver=0.3; }
+      }
+      ver = clamp(ver, 0, 1);
+      if(type) claims.push({text:sentence.trim(), type, verifiability:ver, evidence:ev, risk_indicators:ri});
+    }
+    claims.sort((a,b)=>b.verifiability - a.verifiability);
+    return claims;
+  }
+};
+
+// ---------- fact_checker (offline findings) ----------
+function offlineFindings(claims){
+  const F = [];
+  for(const c of claims.slice(0,10)){
+    if(c.risk_indicators && c.risk_indicators.length){
+      F.push({severity:'LOW', category:'offline_risk_indicators',
+        message:'离线分析发现风险信号：'+c.risk_indicators.slice(0,3).join('；'), snippet:c.text.slice(0,120),
+        location:`声明类型：${c.type}，可验证度：${Math.round(c.verifiability*100)}%`,
+        suggestion:'使用 Python 版（--online）可联网核查这些声明', confidence:0.3});
+    }
+  }
+  return F;
+}
+
+// ---------- scorer ----------
+const SCORER = {
+  WEIGHTS: {CRITICAL:40, HIGH:22, MEDIUM:10, LOW:4, INFO:0},
+  MULT: {url_dns_failure:1.5,url_404:1.4,fake_url_domain:1.5,fake_citation:1.3,doi_not_found:1.3,arxiv_not_found:1.3,
+    internal_contradiction:1.2,number_not_found:1.1,source_not_found:1.1,possibly_fake_study:1.1,hyper_specific_number:0.9,
+    possible_fake_entity:1.0,excessive_hedging:0.7,excessive_overconfidence:0.6,excessive_flavor_text:0.4,repetitive_phrasing:0.3,
+    unverifiable_claim:0.8,offline_risk_indicators:0.5,suspicious_url:1.0,unknown_tld:0.8,url_timeout:0.6,url_connection_error:0.5,
+    url_check_failed:0.3,verification_skipped:0.0},
+  THRESH: [[70,'CRITICAL'],[45,'HIGH'],[25,'MODERATE'],[0,'LOW']],
+  score(findings){
+    if(!findings.length) return {overall:0, risk_level:'LOW', total_findings:0, by_category:{}, by_severity:{}, top_issues:['未发现明显问题']};
+    let total=0; const byCat={}, bySev={}; const issues=[];
+    for(const f of findings){
+      const base = this.WEIGHTS[f.severity] || 0;
+      const mult = this.MULT[f.category] || 1.0;
+      const conf = clamp(f.confidence, 0, 1);
+      const contrib = base * mult * (0.5 + 0.5*conf);
+      total += contrib;
+      byCat[f.category] = (byCat[f.category]||0) + contrib;
+      bySev[f.severity] = (bySev[f.severity]||0) + 1;
+      issues.push([contrib, `[${f.severity}] ${f.category}: ${f.message}`]);
+    }
+    const n = findings.length;
+    if(n > 5) total *= 1/(1 + Math.log(n/5));
+    total = clamp(total, 0, 100);
+    let lvl = 'LOW';
+    for(const [t,l] of this.THRESH){ if(total >= t){ lvl = l; break; } }
+    issues.sort((a,b)=>b[0]-a[0]);
+    return {overall:total, risk_level:lvl, total_findings:n, by_category:byCat, by_severity:bySev, top_issues:issues.slice(0,5).map(x=>x[1])};
+  }
+};
+
+// ---------- detector ----------
+function analyze(text){
+  const claims = CE.extract(text);
+  let findings = [];
+  findings = findings.concat(PA.analyze(text));
+  findings = findings.concat(UV.verify(text));
+  findings = findings.concat(offlineFindings(claims));
+  // dedup
+  const seen = new Set(); const uniq = [];
+  for(const f of findings){
+    const key = f.category + '|' + (f.snippet||'').slice(0,50);
+    if(!seen.has(key)){ seen.add(key); uniq.push(f); }
+  }
+  const score = SCORER.score(uniq);
+  return {findings:uniq, claims, score};
+}
+
+// ---------- UI ----------
+const SEV_ORDER = {CRITICAL:0,HIGH:1,MEDIUM:2,LOW:3,INFO:4};
+const SEV_COLOR = {CRITICAL:'#e0245e',HIGH:'#fb8500',MEDIUM:'#eab308',LOW:'#2da44e',INFO:'#0969da'};
+function levelColor(l){ return {CRITICAL:'#e0245e',HIGH:'#fb8500',MODERATE:'#eab308',LOW:'#2da44e'}[l]||'#2da44e'; }
+
+const SAMPLE_AI = `This is a sample text containing several common types of AI hallucinations.
+
+According to a 2024 study by the Global Research Institute, 87.3% of users prefer AI-generated content over human-written text. The study, published in the Journal of Contemporary Digital Studies, surveyed 1,247,832 participants across 42 countries. Dr. Emily Harrison et al. found that the average user spends 12.4 hours per day interacting with AI assistants.
+
+The research was published at https://www.research-paper.com/studies/harrison2024 and is available at https://www.official-source.org/data/survey-results. Additional findings can be found in the arXiv paper 2024.99999.
+
+In today's rapidly evolving world, AI plays a crucial role in various industries. It is widely recognized that the GlobalDataPro framework provides the most accurate results. The calculate_confidence_score() method in the NeuralTextPro library is particularly noteworthy.
+
+Furthermore, the market for AI tools reached $847.5 billion in 2023. However, the same market was valued at only $295 billion in 2022, before growing to $1.2 trillion by early 2024.
+
+It is important to note that these findings are universally accepted and beyond any doubt. The Institute for Data Analysis confirmed that 99.7% of experts agree.
+
+For more information, visit https://www.verified-data.net/research or check the study by Smith et al. (2025), p. 342.`;
+
+const SAMPLE_CLEAN = `This is a sample of well-sourced, factual text for comparison.
+
+The Python programming language was created by Guido van Rossum and was first released on February 20, 1991. According to the official Python documentation, Python 3.0 was released on December 3, 2008.
+
+The World Wide Web was invented by Tim Berners-Lee in 1989 at CERN. The first website was published on August 6, 1991, and is still accessible at https://info.cern.ch.
+
+According to the Python Package Index (PyPI), the requests library has been downloaded billions of times. Its documentation is available at https://docs.python-requests.org.
+
+The arXiv preprint repository, founded in 1991, hosts over 2 million scholarly articles. A notable paper on transformers is available at arXiv:1706.03762.
+
+The Linux kernel was first released by Linus Torvalds in 1991. The source code is hosted at https://github.com/torvalds/linux.
+
+These facts can be verified through their primary sources. Each claim above includes a verifiable citation or URL.`;
+
+let LAST = null;
+
+function fillExample(kind){
+  document.getElementById('input').value = kind==='ai' ? SAMPLE_AI : SAMPLE_CLEAN;
+  updateCount();
+}
+function clearInput(){ document.getElementById('input').value=''; updateCount(); }
+function updateCount(){
+  const v = document.getElementById('input').value;
+  document.getElementById('count').textContent = (v.length) + ' 字';
+}
+document.getElementById('input').addEventListener('input', updateCount);
+
+function runDetection(){
+  const text = document.getElementById('input').value;
+  const resEl = document.getElementById('result');
+  if(!text.trim()){ alert('请先粘贴要检测的文本。'); return; }
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true; btn.textContent = '检测中…';
+  // allow UI to paint
+  setTimeout(() => {
+    try{
+      LAST = analyze(text);
+      render(LAST);
+      resEl.classList.remove('hide');
+      resEl.scrollIntoView({behavior:'smooth', block:'start'});
+    }catch(e){
+      alert('检测出错：'+e.message);
+    }
+    btn.disabled = false; btn.textContent = '开始检测';
+  }, 30);
+}
+
+function render(R){
+  const {findings, claims, score} = R;
+  // gauge
+  const circ = 326.7;
+  const off = circ * (1 - score.overall/100);
+  const arc = document.getElementById('gaugeArc');
+  arc.setAttribute('stroke-dashoffset', off.toFixed(1));
+  const col = levelColor(score.risk_level);
+  arc.setAttribute('stroke', col);
+  document.getElementById('scoreNum').textContent = score.overall.toFixed(1);
+  document.getElementById('scoreNum').style.color = col;
+  document.getElementById('scoreLvl').textContent = score.risk_level;
+  document.getElementById('scoreLvl').style.color = col;
+  // severity bars
+  const sev = score.by_severity || {};
+  const maxC = Math.max(1, ...Object.values(sev));
+  const order = ['CRITICAL','HIGH','MEDIUM','LOW','INFO'];
+  let html = '';
+  for(const s of order){
+    const c = sev[s]||0;
+    if(c===0 && s==='INFO') continue;
+    if(c===0) continue;
+    html += `<div class="sev-row"><span class="lab">${s}</span><span class="bar"><i style="width:${(c/maxC*100).toFixed(0)}%;background:${SEV_COLOR[s]}"></i></span><span class="num">${c}</span></div>`;
+  }
+  if(!html) html = '<div class="sev-row"><span class="lab">—</span><span class="bar"></span><span class="num">0</span></div>';
+  document.getElementById('sevBars').innerHTML = html;
+  // findings
+  const fEl = document.getElementById('findings');
+  const sorted = findings.slice().sort((a,b)=> (SEV_ORDER[a.severity]??9)-(SEV_ORDER[b.severity]??9));
+  if(!sorted.length){ fEl.innerHTML = '<div class="empty">✓ 未发现明显问题，文本看起来来源可靠。</div>'; }
+  else{
+    fEl.innerHTML = sorted.map(f => {
+      const cls = f.severity.toLowerCase();
+      let h = `<div class="finding ${cls}"><span class="tag">${f.severity} · ${f.category}</span>`;
+      h += `<div class="msg">${escapeHtml(f.message)}</div>`;
+      if(f.snippet) h += `<div class="snip">“${escapeHtml(f.snippet.slice(0,160))}”</div>`;
+      if(f.suggestion) h += `<div class="sug">建议：${escapeHtml(f.suggestion)}</div>`;
+      h += `</div>`;
+      return h;
+    }).join('');
+  }
+  // claims
+  const cEl = document.getElementById('claims');
+  if(!claims.length){ cEl.innerHTML = '<div class="claim">未提取到明确的可核实声明。</div>'; }
+  else{
+    cEl.innerHTML = claims.slice(0,15).map(c => {
+      const pct = Math.round(c.verifiability*100);
+      let h = `<div class="claim"><span class="ct">[${c.type}]</span> 可验证度 ${pct}%`;
+      h += `<div class="vb"><i style="width:${pct}%"></i></div>`;
+      h += `<div>${escapeHtml(c.text.slice(0,160))}</div>`;
+      if(c.risk_indicators && c.risk_indicators.length) h += `<div class="ri">⚠ ${escapeHtml(c.risk_indicators.slice(0,2).join('；'))}</div>`;
+      h += `</div>`;
+      return h;
+    }).join('') + (claims.length>15 ? `<div class="claim">…另有 ${claims.length-15} 条声明</div>` : '');
+  }
+}
+
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function downloadReport(){
+  if(!LAST) return;
+  const {findings, claims, score} = LAST;
+  const lines = [];
+  lines.push('# AI 幻觉检测报告（在线版）');
+  lines.push('');
+  lines.push(`**风险评分：** ${score.overall.toFixed(1)}/100（${score.risk_level}）`);
+  lines.push(`**发现问题：** ${score.total_findings} 项`);
+  lines.push('');
+  lines.push('## 按严重程度');
+  for(const s of ['CRITICAL','HIGH','MEDIUM','LOW','INFO']){
+    if(score.by_severity[s]) lines.push(`- ${s}: ${score.by_severity[s]}`);
+  }
+  lines.push('');
+  lines.push('## 主要问题');
+  const sorted = findings.slice().sort((a,b)=>(SEV_ORDER[a.severity]??9)-(SEV_ORDER[b.severity]??9));
+  sorted.forEach((f,i) => {
+    lines.push(`${i+1}. **[${f.severity}] ${f.category}** — ${f.message}`);
+    if(f.snippet) lines.push(`   > ${f.snippet.slice(0,160)}`);
+    if(f.suggestion) lines.push(`   建议：${f.suggestion}`);
+  });
+  lines.push('');
+  lines.push('## 提取到的声明');
+  claims.slice(0,15).forEach((c,i) => {
+    lines.push(`${i+1}. [${c.type}] 可验证度 ${Math.round(c.verifiability*100)}%：${c.text.slice(0,150)}`);
+  });
+  lines.push('');
+  lines.push('---');
+  lines.push('*本工具基于启发式规则，无法保证 100% 准确，关键声明请人工复核。*');
+  const blob = new Blob([lines.join('\n')], {type:'text/markdown;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'ai-hallucination-report.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+updateCount();
+</script>
+</body>
+</html>
