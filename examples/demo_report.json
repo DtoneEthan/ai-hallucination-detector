@@ -1,0 +1,289 @@
+{
+  "metadata": {
+    "generated_at": "2026-07-28T14:17:41.307989",
+    "tool": "AI Hallucination Detector",
+    "version": "1.0.0"
+  },
+  "summary": {
+    "overall_risk_score": 100.0,
+    "risk_level": "CRITICAL",
+    "total_findings": 11,
+    "by_category": {
+      "hyper_specific_number": 7.0,
+      "excessive_overconfidence": 1.6,
+      "excessive_flavor_text": 1.0,
+      "possible_fake_entity": 21.0,
+      "fake_url_domain": 175.5,
+      "offline_risk_indicators": 2.6
+    },
+    "by_severity": {
+      "MEDIUM": 4,
+      "LOW": 4,
+      "CRITICAL": 3
+    },
+    "top_issues": [
+      "[CRITICAL] fake_url_domain: URL domain contains hallucinated pattern: 'research-paper'",
+      "[CRITICAL] fake_url_domain: URL domain contains hallucinated pattern: 'official-source'",
+      "[CRITICAL] fake_url_domain: URL domain contains hallucinated pattern: 'verified-data'",
+      "[MEDIUM] possible_fake_entity: Technical entity 'calculate_confidence_score' may not exist — verify it's a real library/API/method",
+      "[MEDIUM] possible_fake_entity: Technical entity 'NeuralTextPro' may not exist — verify it's a real library/API/method"
+    ]
+  },
+  "claims": [
+    {
+      "text": "According to a 2024 study by the Global Research Institute, 87.3% of users prefer AI-generated content over human-written text.",
+      "type": "numerical",
+      "verifiability": 0.8,
+      "evidence": [
+        "2024",
+        "87.3%",
+        "According to a 2024 study by the Global Research Institute",
+        "2024"
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "found that the average user spends 12.4 hours per day interacting with AI assistants.",
+      "type": "numerical",
+      "verifiability": 0.8,
+      "evidence": [
+        "12.4"
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "The research was published at https://www.research-paper.com/studies/harrison2024 and is available at https://www.official-source.org/data/survey-results.",
+      "type": "numerical",
+      "verifiability": 0.8,
+      "evidence": [
+        "2024",
+        "www.research"
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "Furthermore, the market for AI tools reached $847.5 billion in 2023.",
+      "type": "numerical",
+      "verifiability": 0.8,
+      "evidence": [
+        "$847.5 billion",
+        "2023",
+        "2023"
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "However, the same market was valued at only $295 billion in 2022, before growing to $1.2 trillion by early 2024.",
+      "type": "numerical",
+      "verifiability": 0.8,
+      "evidence": [
+        "$295 billion",
+        "2022,",
+        "$1.2 trillion",
+        "2024",
+        "2022",
+        "2024"
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "The Institute for Data Analysis confirmed that 99.7% of experts agree.",
+      "type": "numerical",
+      "verifiability": 0.8,
+      "evidence": [
+        "99.7%"
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "The study, published in the Journal of Contemporary Digital Studies, surveyed 1,247,832 participants across 42 countries.",
+      "type": "numerical",
+      "verifiability": 0.7,
+      "evidence": [
+        "1,247,832",
+        "42",
+        "published in the Journal of Contemporary Digital Studies"
+      ],
+      "risk_indicators": [
+        "Highly specific number: 1,247,832"
+      ]
+    },
+    {
+      "text": "Additional findings can be found in the arXiv paper 2024.99999.",
+      "type": "numerical",
+      "verifiability": 0.7,
+      "evidence": [
+        "2024.99999",
+        "2024"
+      ],
+      "risk_indicators": [
+        "Highly specific number: 2024.99999"
+      ]
+    },
+    {
+      "text": "Emily Harrison et al.",
+      "type": "citation",
+      "verifiability": 0.7,
+      "evidence": [
+        "et al."
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "For more information, visit https://www.verified-data.net/research or check the study by Smith et al.",
+      "type": "citation",
+      "verifiability": 0.7,
+      "evidence": [
+        "Smith et al.",
+        "www.verified"
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "The calculate_confidence_score() method in the NeuralTextPro library is particularly noteworthy.",
+      "type": "technical",
+      "verifiability": 0.5,
+      "evidence": [
+        "method"
+      ],
+      "risk_indicators": []
+    },
+    {
+      "text": "It is widely recognized that the GlobalDataPro framework provides the most accurate results.",
+      "type": "technical",
+      "verifiability": 0.4,
+      "evidence": [
+        "framework"
+      ],
+      "risk_indicators": [
+        "Absolute language: 'it is widely recognized'"
+      ]
+    },
+    {
+      "text": "This is a sample text containing several common types of AI hallucinations.",
+      "type": "other",
+      "verifiability": 0.3,
+      "evidence": [],
+      "risk_indicators": [
+        "Absolute language: 'all'"
+      ]
+    },
+    {
+      "text": "In today's rapidly evolving world, AI plays a crucial role in various industries.",
+      "type": "other",
+      "verifiability": 0.3,
+      "evidence": [],
+      "risk_indicators": []
+    },
+    {
+      "text": "It is important to note that these findings are universally accepted and beyond any doubt.",
+      "type": "other",
+      "verifiability": 0.3,
+      "evidence": [],
+      "risk_indicators": [
+        "Absolute language: 'all'"
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "severity": "MEDIUM",
+      "category": "hyper_specific_number",
+      "message": "Very specific statistic (1,247,832) in a factual context — verify this number",
+      "snippet": "The study, published in the Journal of Contemporary Digital Studies, surveyed 1,247,832 participants across 42 countries",
+      "location": "sentence 3",
+      "suggestion": "Search for this exact figure: 1,247,832",
+      "confidence": 0.55
+    },
+    {
+      "severity": "LOW",
+      "category": "excessive_overconfidence",
+      "message": "Multiple absolute certainty claims (3 instances) — hallucinated content often uses overconfident language",
+      "snippet": "beyond any doubt, It is widely recognized, universally",
+      "location": "",
+      "suggestion": "Verify claims that use absolute language especially carefully",
+      "confidence": 0.35
+    },
+    {
+      "severity": "LOW",
+      "category": "excessive_flavor_text",
+      "message": "High frequency of generic filler phrases (4 instances) — content may be padded with AI-generated boilerplate",
+      "snippet": "In today's rapidly evolving world | It is important to note that | Furthermore, | plays a crucial role",
+      "location": "",
+      "suggestion": "Filler text isn't inherently hallucinated, but it often accompanies fabricated content",
+      "confidence": 0.25
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "possible_fake_entity",
+      "message": "Technical entity 'calculate_confidence_score' may not exist — verify it's a real library/API/method",
+      "snippet": "calculate_confidence_score",
+      "location": "",
+      "suggestion": "Search for 'calculate_confidence_score' in official documentation or package registries",
+      "confidence": 0.4
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "possible_fake_entity",
+      "message": "Technical entity 'NeuralTextPro' may not exist — verify it's a real library/API/method",
+      "snippet": "NeuralTextPro",
+      "location": "",
+      "suggestion": "Search for 'NeuralTextPro' in official documentation or package registries",
+      "confidence": 0.4
+    },
+    {
+      "severity": "MEDIUM",
+      "category": "possible_fake_entity",
+      "message": "Technical entity 'GlobalDataPro' may not exist — verify it's a real library/API/method",
+      "snippet": "GlobalDataPro",
+      "location": "",
+      "suggestion": "Search for 'GlobalDataPro' in official documentation or package registries",
+      "confidence": 0.4
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "fake_url_domain",
+      "message": "URL domain contains hallucinated pattern: 'research-paper'",
+      "snippet": "https://www.research-paper.com/studies/harrison2024",
+      "location": "domain: www.research-paper.com",
+      "suggestion": "This URL is very likely fabricated by an AI model",
+      "confidence": 0.95
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "fake_url_domain",
+      "message": "URL domain contains hallucinated pattern: 'official-source'",
+      "snippet": "https://www.official-source.org/data/survey-results",
+      "location": "domain: www.official-source.org",
+      "suggestion": "This URL is very likely fabricated by an AI model",
+      "confidence": 0.95
+    },
+    {
+      "severity": "CRITICAL",
+      "category": "fake_url_domain",
+      "message": "URL domain contains hallucinated pattern: 'verified-data'",
+      "snippet": "https://www.verified-data.net/research",
+      "location": "domain: www.verified-data.net",
+      "suggestion": "This URL is very likely fabricated by an AI model",
+      "confidence": 0.95
+    },
+    {
+      "severity": "LOW",
+      "category": "offline_risk_indicators",
+      "message": "Risk indicators found (offline analysis): Highly specific number: 1,247,832",
+      "snippet": "The study, published in the Journal of Contemporary Digital Studies, surveyed 1,247,832 participants across 42 countries",
+      "location": "claim type: numerical, verifiability: 70%",
+      "suggestion": "Run with --online flag to verify claims against web sources",
+      "confidence": 0.3
+    },
+    {
+      "severity": "LOW",
+      "category": "offline_risk_indicators",
+      "message": "Risk indicators found (offline analysis): Highly specific number: 2024.99999",
+      "snippet": "Additional findings can be found in the arXiv paper 2024.99999.",
+      "location": "claim type: numerical, verifiability: 70%",
+      "suggestion": "Run with --online flag to verify claims against web sources",
+      "confidence": 0.3
+    }
+  ]
+}
