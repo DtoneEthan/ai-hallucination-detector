@@ -6,6 +6,8 @@ A multi-strategy toolkit for detecting potential **AI hallucinations** in text. 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-beta-orange.svg)
 
+> **Ethan X 工作室出品** · Produced by Ethan X Studio
+
 ## Why?
 
 Large language models sometimes produce text that **looks authoritative but contains fabricated facts** — nonexistent studies, invented URLs, fake statistics, contradictory claims. This tool helps you catch those before they cause damage.
@@ -23,7 +25,7 @@ Large language models sometimes produce text that **looks authoritative but cont
 
 ```bash
 # From source
-git clone https://github.com/ethanxu/ai-hallucination-detector.git
+git clone https://github.com/DtoneEthan/ai-hallucination-detector.git
 cd ai-hallucination-detector
 pip install -e .
 
