@@ -75,6 +75,21 @@
   footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:30px}
   footer .studio{font-weight:700;color:var(--brand);margin-top:8px}
   .hide{display:none!important}
+  /* upload */
+  .dropzone{border:2px dashed var(--line);border-radius:12px;padding:18px;margin-bottom:14px;text-align:center;color:var(--muted);cursor:pointer;background:var(--card);transition:.15s}
+  .dropzone:hover,.dropzone.drag{border-color:var(--brand);background:var(--brand-soft)}
+  .dropzone .big{font-size:14px;color:var(--fg)}
+  .dropzone .fmt{font-size:11.5px;margin-top:8px}
+  #fileInfo{font-size:12.5px;margin:0 0 12px;font-weight:600;color:var(--brand)}
+  /* two-metric header */
+  .metrics{display:flex;gap:20px;flex-wrap:wrap;align-items:center}
+  .metric{display:flex;align-items:center;gap:13px}
+  .metric .gauge{display:block}
+  .metric .gauge svg{width:104px;height:104px}
+  .metric .cap{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px}
+  .metric .score{font-size:25px;font-weight:800;line-height:1.1}
+  .metric .lvl{font-weight:700;font-size:13px}
+  .ai-note{font-size:11.5px;color:var(--muted);padding:0 22px 14px}
 </style>
 </head>
 <body>
@@ -99,7 +114,13 @@
 <section>
   <div class="wrap">
     <div class="input-card">
-      <textarea id="input" placeholder="在此粘贴要检测的文本（中英文均可）……&#10;例如：根据 2024 年某研究院的研究，87.3% 的用户更偏好 AI 生成内容，详见 https://www.research-paper.com/xxx"></textarea>
+      <div class="dropzone" id="dropzone">
+        <div class="big">📄 拖拽文件到此处，或点击选择</div>
+        <div class="fmt">支持 .txt · .md · .html · .pdf · .docx · .csv · .json 等常见格式（最大 5MB）</div>
+      </div>
+      <input type="file" id="fileInput" accept=".txt,.md,.markdown,.text,.html,.htm,.xml,.csv,.json,.pdf,.docx,.tex,.rst,.log,.tsv,.yaml,.yml" style="display:none" />
+      <div id="fileInfo"></div>
+      <textarea id="input" placeholder="在此粘贴要检测的文本（中英文均可），或上传文档……&#10;例如：根据 2024 年某研究院的研究，87.3% 的用户更偏好 AI 生成内容，详见 https://www.research-paper.com/xxx"></textarea>
       <div class="toolbar">
         <div class="examples">
           <button onclick="fillExample('ai')">示例：含幻觉文本</button>
@@ -118,20 +139,37 @@
     <div class="result hide" id="result">
       <div class="score-card">
         <div class="score-head">
-          <div class="gauge">
-            <svg viewBox="0 0 120 120">
-              <circle cx="60" cy="60" r="52" fill="none" stroke="#f6f8fa" stroke-width="11"/>
-              <circle id="gaugeArc" cx="60" cy="60" r="52" fill="none" stroke="#2da44e" stroke-width="11"
-                stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
-                transform="rotate(-90 60 60)"/>
-            </svg>
-            <div>
-              <div class="score" id="scoreNum">0</div>
-              <div class="lvl" id="scoreLvl">LOW</div>
+          <div class="metrics">
+            <div class="metric">
+              <svg class="gauge" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#f6f8fa" stroke-width="11"/>
+                <circle id="gaugeArc" cx="60" cy="60" r="52" fill="none" stroke="#2da44e" stroke-width="11"
+                  stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
+                  transform="rotate(-90 60 60)"/>
+              </svg>
+              <div>
+                <div class="cap">幻觉风险</div>
+                <div class="score" id="scoreNum">0</div>
+                <div class="lvl" id="scoreLvl">LOW</div>
+              </div>
+            </div>
+            <div class="metric">
+              <svg class="gauge" viewBox="0 0 120 120">
+                <circle cx="60" cy="60" r="52" fill="none" stroke="#f6f8fa" stroke-width="11"/>
+                <circle id="gaugeArcAI" cx="60" cy="60" r="52" fill="none" stroke="#5b21b6" stroke-width="11"
+                  stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
+                  transform="rotate(-90 60 60)"/>
+              </svg>
+              <div>
+                <div class="cap">AI 率</div>
+                <div class="score" id="aiNum">0%</div>
+                <div class="lvl" id="aiLvl">低</div>
+              </div>
             </div>
           </div>
           <div class="sev-bars" id="sevBars"></div>
         </div>
+        <div class="ai-note">AI 率为基于语言风格的启发式估计（套话密度、句子均匀度、连接词等），不代表权威 AI 检测结论，仅供参考。</div>
         <div class="block">
           <h3>主要问题（按严重程度排序）</h3>
           <div id="findings"></div>
@@ -580,6 +618,46 @@ const SCORER = {
   }
 };
 
+// ---------- AI-rate estimator (heuristic, style-based) ----------
+function computeAI(text){
+  const sentences = splitSentences(text);
+  const wc = text.trim().split(/\s+/).filter(Boolean).length || 1;
+  let flavor=0; for(const p of PA.FLAVOR_TEXT_PATTERNS) flavor += PA._countAll(text,p).length;
+  let hedge=0;  for(const p of PA.HEDGE_PATTERNS)     hedge  += PA._countAll(text,p).length;
+  let over=0;   for(const p of PA.OVERCONFIDENCE_PATTERNS) over += PA._countAll(text,p).length;
+  const CONNECTIVE = [
+    /\b(?:furthermore|moreover|additionally|in addition|however|therefore|thus|hence|consequently|nevertheless|nonetheless|meanwhile|besides|likewise|similarly)\b/gi,
+    /(?:此外|而且|另外|然而|因此|所以|于是|与此同时|不过|尽管如此|与此同时)/g
+  ];
+  let conn=0; for(const p of CONNECTIVE) conn += (text.match(p)||[]).length;
+  const lengths = sentences.map(s => s.trim().split(/\s+/).filter(Boolean).length);
+  let cv = 0.6;
+  if(lengths.length > 1){
+    const mean = lengths.reduce((a,b)=>a+b,0)/lengths.length;
+    const variance = lengths.reduce((a,b)=>a+(b-mean)**2,0)/lengths.length;
+    cv = mean > 0 ? Math.sqrt(variance)/mean : 0.6;
+  }
+  const counts = {};
+  for(const s of sentences){
+    const w = s.toLowerCase().split(/\s+/).filter(Boolean);
+    for(let i=0;i<w.length-2;i++){ const ph = w.slice(i,i+3).join(' '); if(ph.length>10) counts[ph]=(counts[ph]||0)+1; }
+  }
+  let repPhrases = 0;
+  for(const ph in counts) if(counts[ph] >= 3) repPhrases++;
+  const fFlavor = clamp(flavor / Math.max(2, wc*0.015), 0, 1);
+  const fHedge  = clamp(hedge  / Math.max(2, wc*0.020), 0, 1);
+  const fOver   = clamp(over   / 3, 0, 1);
+  const fConn   = clamp(conn   / Math.max(3, wc*0.020), 0, 1);
+  const fUniform= clamp((0.55 - cv)/0.55, 0, 1);
+  const fRep    = clamp(repPhrases/3, 0, 1);
+  let raw = 0.42*fFlavor + 0.20*fOver + 0.18*fConn + 0.10*fHedge + 0.05*fUniform + 0.05*fRep;
+  let prob = raw * 100;
+  if(wc < 40) prob *= 0.7;
+  prob = clamp(Math.round(prob), 0, 100);
+  const level = prob>=75 ? '极高' : prob>=55 ? '高' : prob>=35 ? '中' : '低';
+  return {prob, level, signals:{flavor,hedge,over,conn,repPhrases,cv:+cv.toFixed(2),wc}};
+}
+
 // ---------- detector ----------
 function analyze(text){
   const claims = CE.extract(text);
@@ -594,7 +672,8 @@ function analyze(text){
     if(!seen.has(key)){ seen.add(key); uniq.push(f); }
   }
   const score = SCORER.score(uniq);
-  return {findings:uniq, claims, score};
+  const ai = computeAI(text);
+  return {findings:uniq, claims, score, ai};
 }
 
 // ---------- UI ----------
@@ -664,7 +743,7 @@ function runDetection(){
 }
 
 function render(R){
-  const {findings, claims, score} = R;
+  const {findings, claims, score, ai} = R;
   // gauge
   const circ = 326.7;
   const off = circ * (1 - score.overall/100);
@@ -676,6 +755,16 @@ function render(R){
   document.getElementById('scoreNum').style.color = col;
   document.getElementById('scoreLvl').textContent = score.risk_level;
   document.getElementById('scoreLvl').style.color = col;
+  // AI-rate gauge
+  if(ai){
+    const aiOff = circ * (1 - ai.prob/100);
+    const aiArc = document.getElementById('gaugeArcAI');
+    if(aiArc) aiArc.setAttribute('stroke-dashoffset', aiOff.toFixed(1));
+    const aiNum = document.getElementById('aiNum');
+    const aiLvl = document.getElementById('aiLvl');
+    if(aiNum) aiNum.textContent = ai.prob + '%';
+    if(aiLvl){ aiLvl.textContent = ai.level; aiLvl.style.color = ai.prob>=55 ? '#e0245e' : ai.prob>=35 ? '#fb8500' : '#2da44e'; }
+  }
   // severity bars
   const sev = score.by_severity || {};
   const maxC = Math.max(1, ...Object.values(sev));
@@ -731,6 +820,7 @@ function downloadReport(){
   lines.push('# AI 幻觉检测报告（在线版）');
   lines.push('');
   lines.push(`**风险评分：** ${score.overall.toFixed(1)}/100（${score.risk_level}）`);
+  if(LAST.ai) lines.push(`**AI 率（AI 生成可能性估计）：** ${LAST.ai.prob}%（${LAST.ai.level}）`);
   lines.push(`**发现问题：** ${score.total_findings} 项`);
   lines.push('');
   lines.push('## 按严重程度');
@@ -762,6 +852,80 @@ function downloadReport(){
 }
 
 updateCount();
+
+// ---------- file upload ----------
+const UPLOAD_TEXT = /\.(txt|text|md|markdown|html?|xml|csv|tsv|json|tex|rst|log|yaml|yml|js|ts|jsx|tsx|py|java|c|cpp|h|hpp|go|rs|rb|php|css|scss|sql|sh|bat|ps1)$/i;
+const MAX_FILE = 5*1024*1024;
+function initUploaders(){
+  const dz = document.getElementById('dropzone');
+  const inp = document.getElementById('fileInput');
+  if(!dz || !inp) return;
+  dz.addEventListener('click', ()=>inp.click());
+  inp.addEventListener('change', e=>{ if(e.target.files && e.target.files[0]) handleFile(e.target.files[0]); });
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.remove('drag');}));
+  dz.addEventListener('drop', e=>{ const f = e.dataTransfer && e.dataTransfer.files[0]; if(f) handleFile(f); });
+}
+function fileInfo(msg, color){ const el=document.getElementById('fileInfo'); if(el){ el.textContent=msg; el.style.color=color||'var(--brand)'; } }
+function setText(text, name){
+  const ta = document.getElementById('input'); ta.value = text; updateCount();
+  fileInfo('已载入 '+name+'（'+text.length+' 字），点击「开始检测」。', 'var(--low)');
+}
+function handleFile(file){
+  if(file.size > MAX_FILE){ fileInfo('文件过大（>5MB），请改用更小的文件或粘贴文本。', '#e0245e'); return; }
+  const name = file.name;
+  const ext = (name.split('.').pop()||'').toLowerCase();
+  if(UPLOAD_TEXT.test(name)){
+    fileInfo('正在读取 '+name+'…');
+    const reader = new FileReader();
+    reader.onload = e=>setText(String(e.target.result||''), name);
+    reader.onerror = ()=>fileInfo('读取失败，请重试或粘贴文本。', '#e0245e');
+    reader.readAsText(file, 'utf-8');
+    return;
+  }
+  if(ext === 'pdf'){ fileInfo('正在解析 PDF：'+name+'…'); loadLib('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', 'PDF', info=>extractPdf(file, info)); return; }
+  if(ext === 'docx'){ fileInfo('正在解析 Word 文档：'+name+'…'); loadLib('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js', 'Word', info=>extractDocx(file, info)); return; }
+  fileInfo('暂不支持 .'+ext+' 格式。支持 .txt/.md/.html/.pdf/.docx/.csv/.json 等，或复制文本粘贴。', '#e0245e');
+}
+function loadLib(src, label, cb){
+  const info = document.getElementById('fileInfo');
+  if(window.__libs && window.__libs[src]){ cb(info); return; }
+  fileInfo('加载 '+label+' 解析库…');
+  const s = document.createElement('script');
+  s.src = src;
+  s.onload = ()=>{ window.__libs = window.__libs||{}; window.__libs[src]=1; cb(info); };
+  s.onerror = ()=>fileInfo(label+' 解析库加载失败（可能处于离线环境）。请复制文本粘贴。', '#e0245e');
+  document.head.appendChild(s);
+}
+function extractPdf(file, info){
+  if(!window.pdfjsLib){ fileInfo('PDF 解析库未就绪，请复制文本粘贴。', '#e0245e'); return; }
+  try{ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }catch(e){}
+  const reader = new FileReader();
+  reader.onload = async (e)=>{
+    try{
+      const buf = new Uint8Array(e.target.result);
+      const pdf = await pdfjsLib.getDocument({data:buf}).promise;
+      let txt = '';
+      const n = Math.min(pdf.numPages, 120);
+      for(let i=1;i<=n;i++){ const pg = await pdf.getPage(i); const c = await pg.getTextContent(); txt += (c.items||[]).map(it=>it.str||'').join(' ') + '\n'; }
+      setText(txt, file.name);
+    }catch(err){ fileInfo('PDF 解析失败：'+(err&&err.message||err), '#e0245e'); }
+  };
+  reader.onerror = ()=>fileInfo('PDF 读取失败。', '#e0245e');
+  reader.readAsArrayBuffer(file);
+}
+function extractDocx(file, info){
+  if(!window.mammoth){ fileInfo('Word 解析库未就绪，请复制文本粘贴。', '#e0245e'); return; }
+  const reader = new FileReader();
+  reader.onload = e=>{
+    mammoth.extractRawText({arrayBuffer:e.target.result}).then(r=>setText(r.value||'', file.name))
+      .catch(err=>fileInfo('Word 解析失败：'+(err&&err.message||err), '#e0245e'));
+  };
+  reader.onerror = ()=>fileInfo('Word 读取失败。', '#e0245e');
+  reader.readAsArrayBuffer(file);
+}
+
+initUploaders();
 </script>
 </body>
 </html>
