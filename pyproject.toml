@@ -1,0 +1,63 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-hallucination-detector"
+version = "1.0.0"
+description = "A multi-strategy toolkit for detecting potential AI hallucinations in text"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Ethan Xu", email = "ethan@example.com"},
+]
+keywords = ["ai", "hallucination", "detector", "fact-checking", "nlp", "verification"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Text Processing :: Linguistic",
+]
+dependencies = [
+    "requests>=2.20",
+    "beautifulsoup4>=4.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "flake8>=5.0",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+"hallucination-detector" = "hallucination_detector.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/ethanxu/ai-hallucination-detector"
+Repository = "https://github.com/ethanxu/ai-hallucination-detector"
+Issues = "https://github.com/ethanxu/ai-hallucination-detector/issues"
+
+[tool.setuptools.packages.find]
+include = ["hallucination_detector*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
