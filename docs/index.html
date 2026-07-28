@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AI Hallucination Detector · AI 幻觉检测器</title>
+<meta name="description" content="多策略 AI 幻觉检测工具：声明提取、模式分析、URL/引用验证、联网事实核查与加权风险评分。CLI + Python API，支持中英文。" />
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1f2328; --muted:#656d76; --line:#d0d7de;
+    --brand:#5b21b6; --brand-soft:#f3eefb;
+    --crit:#e0245e; --high:#fb8500; --med:#eab308; --low:#2da44e; --info:#0969da;
+    --code-bg:#0d1117; --code-fg:#e6edf3; --card:#f6f8fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Helvetica,Arial,sans-serif;
+       color:var(--fg);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--brand);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px}
+  header.nav{border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(255,255,255,.9);backdrop-filter:blur(6px);z-index:10}
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:60px}
+  .logo{font-weight:700;font-size:18px;display:flex;align-items:center;gap:8px}
+  .logo .dot{width:12px;height:12px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+  .nav a.gh{font-size:14px;color:var(--muted)}
+  .hero{padding:72px 0 56px;text-align:center}
+  .hero h1{font-size:42px;line-height:1.15;letter-spacing:-.5px}
+  .hero h1 .accent{color:var(--brand)}
+  .hero p.sub{font-size:18px;color:var(--muted);margin:18px auto 0;max-width:640px}
+  .badges{margin:24px 0 30px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+  .badges img{height:22px}
+  .cta{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:8px;font-weight:600;font-size:15px;transition:.15s}
+  .btn.primary{background:var(--brand);color:#fff}
+  .btn.primary:hover{background:#4c1d95;text-decoration:none}
+  .btn.ghost{border:1px solid var(--line);color:var(--fg)}
+  .btn.ghost:hover{background:var(--card);text-decoration:none}
+  section{padding:52px 0;border-top:1px solid var(--line)}
+  section h2{font-size:28px;margin-bottom:8px;letter-spacing:-.3px}
+  section .lead{color:var(--muted);margin-bottom:28px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .card .ico{font-size:24px}
+  .card h3{font-size:16px;margin:10px 0 6px}
+  .card p{font-size:14px;color:var(--muted)}
+  pre{background:var(--code-bg);color:var(--code-fg);border-radius:12px;padding:18px 20px;overflow:auto;font-size:13.5px;line-height:1.55}
+  pre code{font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace}
+  .com{color:#8b949e}.key{color:#79c0ff}.str{color:#a5d6ff}.fn{color:#d2a8ff}
+  .demo-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:8px}
+  .demo-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line);background:var(--card)}
+  .toggle{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+  .toggle button{border:0;background:#fff;padding:8px 14px;font-size:13px;cursor:pointer;color:var(--muted)}
+  .toggle button.on{background:var(--brand);color:#fff}
+  .demo-body{display:grid;grid-template-columns:240px 1fr;gap:24px;padding:24px 20px}
+  @media(max-width:680px){.demo-body{grid-template-columns:1fr}}
+  .gauge{text-align:center}
+  .gauge svg{width:180px;height:180px}
+  .gauge .score{font-size:34px;font-weight:800}
+  .gauge .lvl{font-weight:700;letter-spacing:.5px}
+  .sev-bars{margin-top:14px}
+  .sev-row{display:flex;align-items:center;gap:8px;font-size:13px;margin:5px 0}
+  .sev-row .lab{width:74px;color:var(--muted)}
+  .sev-row .bar{flex:1;height:9px;border-radius:5px;background:var(--card);overflow:hidden}
+  .sev-row .bar i{display:block;height:100%;border-radius:5px}
+  .sev-row .num{width:22px;text-align:right;font-variant-numeric:tabular-nums}
+  .findings h4{font-size:14px;margin:4px 0 10px;color:var(--muted)}
+  .finding{border-left:4px solid var(--line);padding:8px 12px;margin:8px 0;background:var(--card);border-radius:0 8px 8px 0;font-size:13.5px}
+  .finding.crit{border-color:var(--crit)} .finding.high{border-color:var(--high)}
+  .finding.med{border-color:var(--med)} .finding.low{border-color:var(--low)}
+  .finding .tag{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px}
+  .finding.crit .tag{color:var(--crit)} .finding.high .tag{color:var(--high)}
+  .finding.med .tag{color:#a16207} .finding.low .tag{color:var(--low)}
+  .finding .msg{color:var(--fg)}
+  .finding .snip{color:var(--muted);font-size:12.5px;margin-top:3px}
+  .sample-text{margin-top:18px;font-size:13px;color:var(--muted);background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:14px;white-space:pre-wrap}
+  footer{padding:36px 0;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <div class="logo"><span class="dot"></span> AI Hallucination Detector</div>
+    <a class="gh" href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">GitHub ↗</a>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>检测 <span class="accent">AI 幻觉</span><br/>让生成内容可被验证</h1>
+    <p class="sub">一款多策略的 AI 幻觉检测工具：声明提取、语言模式分析、URL / 引用验证、联网事实核查，并给出 0–100 加权风险评分。支持中英文，CLI 与 Python API 双形态。</p>
+    <div class="badges">
+      <img alt="python" src="https://img.shields.io/badge/python-3.8%2B-blue?style=flat-square" />
+      <img alt="license" src="https://img.shields.io/badge/license-MIT-green?style=flat-square" />
+      <img alt="tests" src="https://img.shields.io/badge/tests-33%20passing-brightgreen?style=flat-square" />
+      <img alt="lang" src="https://img.shields.io/badge/language-EN%20%7C%20ZH-orange?style=flat-square" />
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">在 GitHub 查看</a>
+      <a class="btn ghost" href="#start">快速开始 ↓</a>
+    </div>
+  </div>
+</div>
+
+<section id="features">
+  <div class="wrap">
+    <h2>它能检测什么</h2>
+    <p class="lead">四个检测模块协同工作，离线即可运行大部分分析，联网可进一步核验。</p>
+    <div class="grid">
+      <div class="card"><div class="ico">🔍</div><h3>声明提取</h3><p>从文本中提取数字、引用、日期与技术断言，并为每条声明评估「可验证性」。</p></div>
+      <div class="card"><div class="ico">🧠</div><h3>模式分析</h3><p>识别过度对冲 / 过度自信、填充套话、内部矛盾、超精确数字与疑似虚构的技术实体。</p></div>
+      <div class="card"><div class="ico">🔗</div><h3>URL / 引用验证</h3><p>检查 DNS 解析、404 死链、可疑域名，以及伪造的 DOI / arXiv 引用。</p></div>
+      <div class="card"><div class="ico">🌐</div><h3>联网事实核查</h3><p>通过搜索引擎查询交叉验证提取出的声明（需联网模式）。</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="start">
+  <div class="wrap">
+    <h2>快速开始</h2>
+    <p class="lead">用 <code>pip</code> 安装，或用 Python API 嵌入你自己的流程。</p>
+    <pre><code><span class="com"># 安装</span>
+pip install -e .
+
+<span class="com"># CLI：检测一个文件（离线模式，无需联网）</span>
+hallucination-detector detect article.txt --offline --format json -o report.json
+
+<span class="com"># 直接检测一段文本</span>
+hallucination-detector detect --text <span class="str">"Some AI-generated text..."</span> --offline
+
+<span class="com"># 交互模式</span>
+hallucination-detector interactive</code></pre>
+    <pre><code><span class="com"># Python API</span>
+<span class="key">from</span> hallucination_detector <span class="key">import</span> HallucinationDetector
+
+detector = HallucinationDetector(verify_online=<span class="key">False</span>)
+result = detector.analyze(text)
+
+<span class="fn">print</span>(result.summary())          <span class="com"># 文本摘要</span>
+<span class="fn">print</span>(result.risk_score)        <span class="com"># 0–100 风险分</span>
+<span class="fn">print</span>(result.risk_level)        <span class="com"># LOW / MODERATE / HIGH / CRITICAL</span></code></pre>
+  </div>
+</section>
+
+<section id="demo">
+  <div class="wrap">
+    <h2>在线演示</h2>
+    <p class="lead">下方为工具对两段示例文本的真实输出（离线模式）。点击切换查看「含幻觉」与「正常」文本的检测结果。</p>
+
+    <div class="demo-card">
+      <div class="demo-head">
+        <strong>检测报告</strong>
+        <div class="toggle">
+          <button id="btnA" class="on" onclick="show('A')">示例 A · 含幻觉</button>
+          <button id="btnB" onclick="show('B')">示例 B · 正常</button>
+        </div>
+      </div>
+
+      <!-- Panel A -->
+      <div class="demo-body" id="panelA">
+        <div>
+          <div class="gauge">
+            <svg viewBox="0 0 180 180">
+              <circle cx="90" cy="90" r="80" fill="none" stroke="#f6f8fa" stroke-width="14"/>
+              <circle cx="90" cy="90" r="80" fill="none" stroke="#e0245e" stroke-width="14"
+                stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="0"
+                transform="rotate(-90 90 90)"/>
+              <text x="90" y="84" text-anchor="middle" class="score" fill="#e0245e">100</text>
+              <text x="90" y="112" text-anchor="middle" class="lvl" fill="#e0245e">CRITICAL</text>
+            </svg>
+            <div style="font-size:12px;color:var(--muted)">风险评分 / 100</div>
+          </div>
+          <div class="sev-bars">
+            <div class="sev-row"><span class="lab">CRITICAL</span><span class="bar"><i style="width:100%;background:#e0245e"></i></span><span class="num">3</span></div>
+            <div class="sev-row"><span class="lab">MEDIUM</span><span class="bar"><i style="width:100%;background:#eab308"></i></span><span class="num">4</span></div>
+            <div class="sev-row"><span class="lab">LOW</span><span class="bar"><i style="width:100%;background:#2da44e"></i></span><span class="num">4</span></div>
+          </div>
+        </div>
+        <div class="findings">
+          <h4>主要问题（共 11 项发现）</h4>
+          <div class="finding crit"><span class="tag">CRITICAL · fake_url</span><div class="msg">疑似虚构域名 research-paper.com</div><div class="snip">https://www.research-paper.com/studies/harrison2024</div></div>
+          <div class="finding crit"><span class="tag">CRITICAL · fake_url</span><div class="msg">疑似虚构域名 official-source.org</div><div class="snip">https://www.official-source.org/data/survey-results</div></div>
+          <div class="finding crit"><span class="tag">CRITICAL · fake_url</span><div class="msg">疑似虚构域名 verified-data.net</div><div class="snip">https://www.verified-data.net/research</div></div>
+          <div class="finding med"><span class="tag">MEDIUM · fake_entity</span><div class="msg">技术实体可能不存在：NeuralTextPro</div></div>
+          <div class="finding med"><span class="tag">MEDIUM · fake_entity</span><div class="msg">技术实体可能不存在：calculate_confidence_score</div></div>
+          <div class="finding med"><span class="tag">MEDIUM · fake_entity</span><div class="msg">技术实体可能不存在：GlobalDataPro</div></div>
+          <div class="finding med"><span class="tag">MEDIUM · hyper_number</span><div class="msg">超精确数字 1,247,832，建议核实</div></div>
+          <div class="finding low"><span class="tag">LOW · overconfidence</span><div class="msg">3 处绝对化断言（beyond any doubt / widely recognized / universally）</div></div>
+          <div class="finding low"><span class="tag">LOW · flavor_text</span><div class="msg">4 处通用填充套话</div></div>
+        </div>
+      </div>
+      <div class="sample-text" id="textA">「根据 2024 年 Global Research Institute 的研究，87.3% 的用户更偏好 AI 生成内容……该研究发表于 https://www.research-paper.com/studies/harrison2024，市场达 $847.5 billion……NeuralTextPro 库的 calculate_confidence_score() 方法值得注意……这些发现被普遍接受、毋庸置疑。」</div>
+
+      <!-- Panel B -->
+      <div class="demo-body hide" id="panelB">
+        <div>
+          <div class="gauge">
+            <svg viewBox="0 0 180 180">
+              <circle cx="90" cy="90" r="80" fill="none" stroke="#f6f8fa" stroke-width="14"/>
+              <circle cx="90" cy="90" r="80" fill="none" stroke="#2da44e" stroke-width="14"
+                stroke-linecap="round" stroke-dasharray="502.65" stroke-dashoffset="496"
+                transform="rotate(-90 90 90)"/>
+              <text x="90" y="84" text-anchor="middle" class="score" fill="#2da44e">1.3</text>
+              <text x="90" y="112" text-anchor="middle" class="lvl" fill="#2da44e">LOW</text>
+            </svg>
+            <div style="font-size:12px;color:var(--muted)">风险评分 / 100</div>
+          </div>
+          <div class="sev-bars">
+            <div class="sev-row"><span class="lab">CRITICAL</span><span class="bar"><i style="width:0%;background:#e0245e"></i></span><span class="num">0</span></div>
+            <div class="sev-row"><span class="lab">MEDIUM</span><span class="bar"><i style="width:0%;background:#eab308"></i></span><span class="num">0</span></div>
+            <div class="sev-row"><span class="lab">LOW</span><span class="bar"><i style="width:25%;background:#2da44e"></i></span><span class="num">1</span></div>
+          </div>
+        </div>
+        <div class="findings">
+          <h4>主要问题（共 1 项发现）</h4>
+          <div class="finding low"><span class="tag">LOW · offline_risk</span><div class="msg">1 处低风险指标，无显著幻觉特征</div></div>
+          <p style="font-size:13px;color:var(--muted);margin-top:10px">正常文本几乎不触发任何风险规则，评分接近 0 —— 说明检测器对真实内容误报很低。</p>
+        </div>
+      </div>
+      <div class="sample-text hide" id="textB">「光合作用（photosynthesis）是绿色植物利用光能将二氧化碳和水转化为有机物并释放氧气的过程。它主要发生在叶绿体中，是地球生命能量流动的基础。」</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>AI Hallucination Detector · 基于启发式规则，无法保证 100% 准确，关键声明请人工复核。</p>
+    <p style="margin-top:6px"><a href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">github.com/DtoneEthan/ai-hallucination-detector</a> · MIT License</p>
+  </div>
+</footer>
+
+<script>
+  function show(which){
+    var A = which === 'A';
+    document.getElementById('panelA').classList.toggle('hide', !A);
+    document.getElementById('textA').classList.toggle('hide', !A);
+    document.getElementById('panelB').classList.toggle('hide', A);
+    document.getElementById('textB').classList.toggle('hide', A);
+    document.getElementById('btnA').classList.toggle('on', A);
+    document.getElementById('btnB').classList.toggle('on', !A);
+  }
+</script>
+</body>
+</html>
