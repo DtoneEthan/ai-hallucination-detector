@@ -82,7 +82,10 @@
 <header class="nav">
   <div class="wrap">
     <div class="logo"><span class="dot"></span> AI Hallucination Detector</div>
-    <a class="gh" href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">GitHub ↗</a>
+    <div style="display:flex;align-items:center;gap:16px">
+      <a class="gh" href="detect.html" style="color:var(--brand);font-weight:700">在线检测 ↗</a>
+      <a class="gh" href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">GitHub ↗</a>
+    </div>
   </div>
 </header>
 
@@ -97,7 +100,8 @@
       <img alt="lang" src="https://img.shields.io/badge/language-EN%20%7C%20ZH-orange?style=flat-square" />
     </div>
     <div class="cta">
-      <a class="btn primary" href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">在 GitHub 查看</a>
+      <a class="btn primary" href="detect.html">在线检测 ↗</a>
+      <a class="btn ghost" href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">在 GitHub 查看</a>
       <a class="btn ghost" href="#start">快速开始 ↓</a>
     </div>
   </div>
@@ -147,6 +151,10 @@ result = detector.analyze(text)
   <div class="wrap">
     <h2>在线演示</h2>
     <p class="lead">下方为工具对两段示例文本的真实输出（离线模式）。点击切换查看「含幻觉」与「正常」文本的检测结果。</p>
+    <div style="margin:18px 0 6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <a class="btn primary" href="detect.html">打开在线检测工具 ↗</a>
+      <span style="color:var(--muted);font-size:14px">立即粘贴文本 / 上传文档，免费得到风险评分与 AI 率，无需安装任何环境。</span>
+    </div>
 
     <div class="demo-card">
       <div class="demo-head">
