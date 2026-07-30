@@ -40,10 +40,12 @@ if __package__ is None or __package__ == "":
     from hallucination_detector import HallucinationDetector
     from hallucination_detector.utils import Severity
     from hallucination_detector import PlagiarismChecker
+    from hallucination_detector import WebSearcher
 else:
     from . import HallucinationDetector
     from .utils import Severity
     from . import PlagiarismChecker
+    from . import WebSearcher
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -144,10 +146,47 @@ Example:
         help="Reference document files to compare against"
     )
     plag_parser.add_argument(
+        "--online", action="store_true",
+        help="Also search the web for identical/near-identical paragraphs (requires network)"
+    )
+    plag_parser.add_argument(
+        "--top-n", type=int, default=8, metavar="N",
+        help="Max number of paragraphs to search online (default: 8)"
+    )
+    plag_parser.add_argument(
         "--format", "-f", choices=["terminal", "json", "markdown"],
         default="terminal", help="Output format (default: terminal)"
     )
     plag_parser.add_argument(
+        "--output", "-o", metavar="FILE",
+        help="Write output to file instead of stdout"
+    )
+
+    # --- webcheck command ---
+    web_parser = subparsers.add_parser(
+        "webcheck", help="Search the web to check if text already exists online"
+    )
+    web_parser.add_argument(
+        "input", nargs="?", default="-",
+        help="Text file to check (use '-' or omit for stdin)"
+    )
+    web_parser.add_argument(
+        "--text", "-t", metavar="TEXT",
+        help="Check text provided directly on the command line"
+    )
+    web_parser.add_argument(
+        "--top-n", type=int, default=8, metavar="N",
+        help="Max number of paragraphs to check online (default: 8)"
+    )
+    web_parser.add_argument(
+        "--max-results", type=int, default=5, metavar="N",
+        help="Max search results per paragraph (default: 5)"
+    )
+    web_parser.add_argument(
+        "--format", "-f", choices=["terminal", "json", "markdown"],
+        default="terminal", help="Output format (default: terminal)"
+    )
+    web_parser.add_argument(
         "--output", "-o", metavar="FILE",
         help="Write output to file instead of stdout"
     )
@@ -328,6 +367,16 @@ def cmd_plagiarism(args):
     checker = PlagiarismChecker()
     result = checker.check(paper, refs, ref_names)
 
+    # Optional online web search for identical/near-identical paragraphs
+    if args.online:
+        try:
+            searcher = WebSearcher(max_results=5)
+            web = searcher.check_text(paper, top_n=args.top_n)
+            result["web"] = web
+        except Exception as e:
+            result["web"] = {"paragraphs_checked": 0, "checks": [],
+                             "error": str(e)}
+
     if args.format == "json":
         import json
         out = json.dumps(result, ensure_ascii=False, indent=2)
@@ -352,6 +401,9 @@ def _rate_color(r: float) -> str:
     if r >= 0.15:
         return "\033[93m"  # light yellow
     return "\033[32m"  # green
+
+
+_COL = "\033[36m"  # cyan for web matches
 
 
 def _plagiarism_terminal(result) -> str:
@@ -382,6 +434,26 @@ def _plagiarism_terminal(result) -> str:
             lines.append(f"    {i}. [{f['score']*100:.0f}% · {f['ref']}] {snippet}")
     else:
         lines.append("    ✓ No highly-overlapping fragments found.")
+
+    web = result.get("web")
+    if web is not None:
+        lines.append("")
+        lines.append("  Web search (identical/near-identical paragraphs):")
+        if web.get("error"):
+            lines.append(f"    ! web search failed: {web['error']}")
+        elif web.get("paragraphs_checked"):
+            found = [c for c in web["checks"] if c.get("found")]
+            lines.append(f"    Paragraphs searched: {web['paragraphs_checked']}   "
+                         f"With online matches: {len(found)}")
+            for c in found[:10]:
+                top = c["results"][0] if c["results"] else {}
+                sim = c.get("best_similarity", 0)
+                url = top.get("url", "")
+                lines.append(f"    - match {sim*100:.0f}%: {url}")
+                if top.get("title"):
+                    lines.append(f"        {top['title'][:80]}")
+        else:
+            lines.append("    (no paragraphs searched)")
     return "\n".join(lines)
 
 
@@ -409,9 +481,117 @@ def _plagiarism_markdown(result) -> str:
             lines.append(f"{i}. **[{f['score']*100:.0f}% · {f['ref']}]** {f['text'][:180]}")
     else:
         lines.append("- 未发现高度重叠片段")
+
+    web = result.get("web")
+    if web is not None:
+        lines.append("")
+        lines.append("## 联网搜索（是否存在一模一样的文字段落）")
+        if web.get("error"):
+            lines.append(f"- ⚠️ 联网搜索失败：{web['error']}")
+        elif web.get("paragraphs_checked"):
+            found = [c for c in web["checks"] if c.get("found")]
+            lines.append(f"- 已搜索段落数：{web['paragraphs_checked']}；命中（网上存在相同或高度相似内容）：{len(found)}")
+            for c in found[:10]:
+                top = c["results"][0] if c["results"] else {}
+                sim = c.get("best_similarity", 0)
+                lines.append(f"- 匹配度 {sim*100:.0f}% → {top.get('url', '')}")
+                if top.get("title"):
+                    lines.append(f"    - {top['title'][:90]}")
+        else:
+            lines.append("- 未搜索任何段落")
+
     lines.append("")
     lines.append("---")
-    lines.append("*本地计算，文件未上传服务器。Ethan X 工作室出品。*")
+    lines.append("*本地计算，文件未上传服务器。联网搜索由用户本机发起，文本会发送至搜索引擎。Ethan X 工作室出品。*")
+    return "\n".join(lines)
+
+
+def cmd_webcheck(args):
+    """Search the web to check whether text already exists online."""
+    if args.text:
+        text = args.text
+    elif args.input == "-":
+        text = sys.stdin.read()
+    else:
+        if not os.path.exists(args.input):
+            print(f"Error: File not found: {args.input}", file=sys.stderr)
+            sys.exit(1)
+        with open(args.input, "r", encoding="utf-8") as f:
+            text = f.read()
+
+    if not text.strip():
+        print("Error: No input text provided.", file=sys.stderr)
+        sys.exit(1)
+
+    searcher = WebSearcher(timeout=15, max_results=args.max_results)
+    web = searcher.check_text(text, top_n=args.top_n)
+
+    if args.format == "json":
+        import json
+        out = json.dumps(web, ensure_ascii=False, indent=2)
+    elif args.format == "markdown":
+        out = _webcheck_markdown(web)
+    else:
+        out = _webcheck_terminal(web)
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8", errors="replace") as f:
+            f.write(out)
+        print(f"Report saved to: {args.output}", file=sys.stderr)
+    else:
+        print(out)
+
+
+def _webcheck_terminal(web: dict) -> str:
+    RESET = "\033[0m"
+    lines = []
+    lines.append("=" * 60)
+    lines.append("  Web Duplicate Check (DuckDuckGo, no API key)")
+    lines.append("  ⚠ Best-effort heuristic — not an academic database.")
+    lines.append("=" * 60)
+    if web.get("error"):
+        lines.append(f"  ! web search failed: {web['error']}")
+        return "\n".join(lines)
+    lines.append(f"  Paragraphs searched: {web.get('paragraphs_checked', 0)}")
+    found = [c for c in web.get("checks", []) if c.get("found")]
+    lines.append(f"  With online matches: {len(found)}")
+    lines.append("")
+    for c in found[:12]:
+        sim = c.get("best_similarity", 0)
+        q = c.get("query", "")
+        lines.append(f"  ● match {_COL}{sim*100:.0f}%{RESET}  {q[:70]}")
+        for r in c.get("results", [])[:3]:
+            lines.append(f"      - {r.get('title', '')[:70]}")
+            lines.append(f"        {r.get('url', '')}")
+    if not found:
+        lines.append("  ✓ No identical/near-identical paragraphs found online.")
+    return "\n".join(lines)
+
+
+def _webcheck_markdown(web: dict) -> str:
+    lines = []
+    lines.append("# 联网查重报告（免费试用版）")
+    lines.append("")
+    lines.append("> ⚠️ 本工具通过搜索引擎（DuckDuckGo）查找网上是否存在相同或高度相似的文字段落，仅作参考，非学术数据库比对。")
+    lines.append("")
+    if web.get("error"):
+        lines.append(f"**错误：** {web['error']}")
+        return "\n".join(lines)
+    lines.append(f"**已搜索段落数：** {web.get('paragraphs_checked', 0)}")
+    found = [c for c in web.get("checks", []) if c.get("found")]
+    lines.append(f"**命中（网上存在相同或高度相似内容）：** {len(found)}")
+    lines.append("")
+    for c in found[:12]:
+        sim = c.get("best_similarity", 0)
+        lines.append(f"## 匹配度 {sim*100:.0f}%")
+        lines.append(f"查询：{c.get('query', '')}")
+        for r in c.get("results", [])[:3]:
+            lines.append(f"- [{r.get('title', '')}]({r.get('url', '')})")
+    if not found:
+        lines.append("✓ 未发现网上存在相同或高度相似的段落。")
+    lines.append("")
+    lines.append("---")
+    lines.append("*文本由用户本机发起搜索，会发送至搜索引擎。Ethan X 工作室出品。*")
     return "\n".join(lines)
 
 
@@ -424,7 +604,7 @@ def cmd_version():
     print(f"Python: {sys.version}")
     print()
     print("A multi-strategy toolkit for detecting AI hallucinations in text.")
-    print("https://github.com/ethanxu/ai-hallucination-detector")
+    print("https://github.com/DtoneEthan/ai-hallucination-detector")
 
 
 def main():
@@ -446,6 +626,8 @@ def main():
         cmd_version()
     elif args.command == "plagiarism":
         cmd_plagiarism(args)
+    elif args.command == "webcheck":
+        cmd_webcheck(args)
 
 
 if __name__ == "__main__":
