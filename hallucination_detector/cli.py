@@ -39,9 +39,11 @@ if __package__ is None or __package__ == "":
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     from hallucination_detector import HallucinationDetector
     from hallucination_detector.utils import Severity
+    from hallucination_detector import PlagiarismChecker
 else:
     from . import HallucinationDetector
     from .utils import Severity
+    from . import PlagiarismChecker
 
 
 def create_parser() -> argparse.ArgumentParser:
@@ -127,6 +129,27 @@ Example:
     # --- version command ---
     subparsers.add_parser(
         "version", help="Show version information"
+    )
+
+    # --- plagiarism command ---
+    plag_parser = subparsers.add_parser(
+        "plagiarism", help="Check a paper against reference documents (offline, heuristic)"
+    )
+    plag_parser.add_argument(
+        "paper", nargs="?", default="-",
+        help="Paper text file (use '-' or omit for stdin)"
+    )
+    plag_parser.add_argument(
+        "--refs", nargs="+", metavar="FILES",
+        help="Reference document files to compare against"
+    )
+    plag_parser.add_argument(
+        "--format", "-f", choices=["terminal", "json", "markdown"],
+        default="terminal", help="Output format (default: terminal)"
+    )
+    plag_parser.add_argument(
+        "--output", "-o", metavar="FILE",
+        help="Write output to file instead of stdout"
     )
 
     return parser
@@ -280,6 +303,118 @@ def cmd_strategies():
         print()
 
 
+def cmd_plagiarism(args):
+    """Run plagiarism check (offline, reference-based)."""
+    # Read paper
+    if args.paper == "-":
+        paper = sys.stdin.read()
+    else:
+        if not os.path.exists(args.paper):
+            print(f"Error: File not found: {args.paper}", file=sys.stderr)
+            sys.exit(1)
+        with open(args.paper, "r", encoding="utf-8") as f:
+            paper = f.read()
+
+    refs, ref_names = [], []
+    if args.refs:
+        for p in args.refs:
+            if not os.path.exists(p):
+                print(f"Error: Reference file not found: {p}", file=sys.stderr)
+                sys.exit(1)
+            with open(p, "r", encoding="utf-8") as f:
+                refs.append(f.read())
+                ref_names.append(os.path.basename(p))
+
+    checker = PlagiarismChecker()
+    result = checker.check(paper, refs, ref_names)
+
+    if args.format == "json":
+        import json
+        out = json.dumps(result, ensure_ascii=False, indent=2)
+    elif args.format == "markdown":
+        out = _plagiarism_markdown(result)
+    else:
+        out = _plagiarism_terminal(result)
+
+    if args.output:
+        with open(args.output, "w", encoding="utf-8", errors="replace") as f:
+            f.write(out)
+        print(f"Report saved to: {args.output}", file=sys.stderr)
+    else:
+        print(out)
+
+
+def _rate_color(r: float) -> str:
+    if r >= 0.5:
+        return "\033[31m"  # red
+    if r >= 0.3:
+        return "\033[33m"  # yellow
+    if r >= 0.15:
+        return "\033[93m"  # light yellow
+    return "\033[32m"  # green
+
+
+def _plagiarism_terminal(result) -> str:
+    RESET = "\033[0m"
+    lines = []
+    lines.append("=" * 60)
+    lines.append("  Paper Plagiarism Check (offline, free trial)")
+    lines.append("  ⚠ This is a local heuristic — accuracy not guaranteed.")
+    lines.append("=" * 60)
+    lines.append("")
+    overall = result["overall"]
+    self_rate = result["self_rate"]
+    lines.append(f"  Total overlap rate (vs references): {_rate_color(overall)}{overall*100:.1f}%{RESET}")
+    lines.append(f"  Internal self-repetition rate:      {_rate_color(self_rate)}{self_rate*100:.1f}%{RESET}")
+    lines.append(f"  Reference documents: {result['ref_count']}   Paper length: {result['paper_len']} chars")
+    lines.append("")
+    lines.append("  Per-reference similarity:")
+    if result["per_ref"]:
+        for pr in result["per_ref"]:
+            lines.append(f"    - {pr['name']}: {_rate_color(pr['jaccard'])}{pr['jaccard']*100:.1f}%{RESET}")
+    else:
+        lines.append("    (no reference documents provided)")
+    lines.append("")
+    lines.append(f"  Repeated fragments (top {len(result['fragments'])}):")
+    if result["fragments"]:
+        for i, f in enumerate(result["fragments"], 1):
+            snippet = f["text"][:90].replace("\n", " ")
+            lines.append(f"    {i}. [{f['score']*100:.0f}% · {f['ref']}] {snippet}")
+    else:
+        lines.append("    ✓ No highly-overlapping fragments found.")
+    return "\n".join(lines)
+
+
+def _plagiarism_markdown(result) -> str:
+    lines = []
+    lines.append("# 论文查重报告（免费试用版 · 本地近似比对）")
+    lines.append("")
+    lines.append("> ⚠️ 本工具为免费试用版，仅做本地近似比对，暂无法保证准确率，不能替代正规查重服务。")
+    lines.append("")
+    lines.append(f"**总重叠率（参考库）：** {result['overall']*100:.1f}%")
+    lines.append(f"**论文自重复率：** {result['self_rate']*100:.1f}%")
+    lines.append(f"**参考文档数：** {result['ref_count']}")
+    lines.append(f"**待查论文字数：** {result['paper_len']}")
+    lines.append("")
+    lines.append("## 与各参考文档相似度")
+    if result["per_ref"]:
+        for pr in result["per_ref"]:
+            lines.append(f"- {pr['name']}: {pr['jaccard']*100:.1f}%")
+    else:
+        lines.append("- 未上传参考文档")
+    lines.append("")
+    lines.append("## 疑似重复片段")
+    if result["fragments"]:
+        for i, f in enumerate(result["fragments"], 1):
+            lines.append(f"{i}. **[{f['score']*100:.0f}% · {f['ref']}]** {f['text'][:180]}")
+    else:
+        lines.append("- 未发现高度重叠片段")
+    lines.append("")
+    lines.append("---")
+    lines.append("*本地计算，文件未上传服务器。Ethan X 工作室出品。*")
+    return "\n".join(lines)
+
+
 def cmd_version():
     """Show version information."""
     from hallucination_detector import __version__, __author__, __license__
@@ -309,6 +444,8 @@ def main():
         cmd_strategies()
     elif args.command == "version":
         cmd_version()
+    elif args.command == "plagiarism":
+        cmd_plagiarism(args)
 
 
 if __name__ == "__main__":
