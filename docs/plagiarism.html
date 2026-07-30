@@ -82,6 +82,15 @@
   .chip .x:hover{color:var(--crit)}
   .chip .pct{color:var(--brand);font-weight:700}
   .sub-note{font-size:12px;color:var(--muted);margin-top:6px}
+  .online-toggle{display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:13px;cursor:pointer}
+  .online-toggle input{margin-top:3px}
+  .online-toggle b{color:var(--brand)}
+  .web-finding{border-left:4px solid var(--info);padding:9px 13px;margin:9px 0;background:var(--card);border-radius:0 8px 8px 0;font-size:13.5px}
+  .web-finding .tag{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--info)}
+  .web-finding a{word-break:break-all}
+  .web-finding .snip{color:var(--muted);font-size:12.5px}
+  .web-err{color:var(--high);font-weight:600;font-size:13px}
+  .web-loading{color:var(--info);font-size:13px}
 </style>
 </head>
 <body>
@@ -142,6 +151,12 @@
       <div class="note">
         🔍 算法说明：将文本切成字符 / 词语 n-gram 指纹，计算待查论文与参考文档的重合比例（Jaccard 相似度）以及论文内部的自我重复率，并列出高度重叠的句子片段。<b>这是近似启发式，非权威查重结论。</b>
       </div>
+
+      <label class="online-toggle">
+        <input type="checkbox" id="onlineChk" />
+        <span><b>联网搜索</b>：检查网上是否存在一模一样的文字段落（经公共 CORS 代理访问搜索引擎，待查文本会发往第三方）</span>
+      </label>
+      <div class="sub-note" id="onlineNote">⚠️ 联网搜索为 <b>试用功能</b>：依赖公共代理与搜索引擎，可能不稳定或失败；且文本会发送至第三方，<b>敏感 / 私密内容请勿开启</b>。结果仅供参考，非学术数据库比对。</div>
     </div>
 
     <div class="result hide" id="result">
@@ -169,6 +184,10 @@
         <div class="block">
           <h3>疑似重复片段（与参考文档高度重叠的句子，按相似度排序）</h3>
           <div id="fragments"></div>
+        </div>
+        <div class="block">
+          <h3>联网搜索：网上是否存在一模一样的文字段落</h3>
+          <div id="webBlock"><div class="sub-note">未启用联网搜索（在上方勾选「联网搜索」后重新查重）。</div></div>
         </div>
       </div>
       <div class="toolbar" style="margin-top:14px;justify-content:flex-end">
@@ -318,13 +337,28 @@ function runCheck(){
   const resEl = document.getElementById('result');
   if(!text.trim()){ alert('请先粘贴待查论文，或点击「载入示例」。'); return; }
   const btn = document.getElementById('runBtn');
+  const online = document.getElementById('onlineChk').checked;
   btn.disabled = true; btn.textContent = '查重中…';
-  setTimeout(()=>{
+  document.getElementById('webBlock').innerHTML = '<div class="web-loading">分析中…</div>';
+  setTimeout(async ()=>{
     try{
       LAST = analyzePlagiarism(text, REFS);
+      LAST.web = null;
       render(LAST);
       resEl.classList.remove('hide');
       resEl.scrollIntoView({behavior:'smooth', block:'start'});
+      if(online){
+        btn.textContent = '联网搜索中…';
+        try{
+          const web = await doWebSearch(text);
+          LAST.web = web;
+          renderWeb(web);
+        }catch(e){
+          document.getElementById('webBlock').innerHTML = '<div class="web-err">联网搜索出错：'+(e&&e.message||e)+'</div>';
+        }
+      } else {
+        document.getElementById('webBlock').innerHTML = '<div class="sub-note">未启用联网搜索（在上方勾选「联网搜索」后重新查重）。</div>';
+      }
     }catch(e){ alert('查重出错：'+e.message); }
     btn.disabled = false; btn.textContent = '开始查重';
   }, 30);
@@ -401,8 +435,23 @@ function downloadReport(){
   });
   else lines.push('- 未发现高度重叠片段');
   lines.push('');
+  lines.push('## 联网搜索（是否存在一模一样的文字段落）');
+  if(R.web && R.web.error){ lines.push(`- ⚠️ 联网搜索失败：${R.web.error}`); }
+  else if(R.web && R.web.checks){
+    const found = R.web.checks.filter(c=>c.found);
+    lines.push(`- 已搜索段落数：${R.web.checks.length}；命中（网上存在相同或高度相似内容）：${found.length}`);
+    found.slice(0,12).forEach(c=>{
+      const sim = Math.round((c.best||0)*100);
+      lines.push(`- 匹配度 ${sim}% · 查询：${c.query}`);
+      (c.results||[]).slice(0,3).forEach(r=>lines.push(`  - [${r.title||r.url}](${r.url})`));
+    });
+    if(!found.length) lines.push('- 未发现网上存在相同或高度相似的段落');
+  } else {
+    lines.push('- 未启用联网搜索');
+  }
+  lines.push('');
   lines.push('---');
-  lines.push('*本地计算，文件未上传服务器。Ethan X 工作室出品。*');
+  lines.push('*本地计算，文件未上传服务器。联网搜索由用户浏览器发起，文本会经公共代理发往搜索引擎。Ethan X 工作室出品。*');
   const blob = new Blob([lines.join('\n')], {type:'text/markdown;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -499,6 +548,112 @@ function extractDocx(file, isRef){
   };
   r.onerror=()=>refInfo('Word 读取失败。','#e0245e');
   r.readAsArrayBuffer(file);
+}
+
+// ---------- 联网搜索（检查网上是否存在一模一样的文字段落）----------
+// 说明：纯前端受浏览器跨域限制，需经公共 CORS 代理访问搜索引擎。
+// 文本会发往第三方（代理 + 搜索引擎），敏感内容请勿开启。结果仅供参考。
+const WEB_PROXIES = [
+  u => 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u),
+  u => 'https://corsproxy.io/?url=' + encodeURIComponent(u),
+  u => 'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(u),
+];
+function ddgUrl(q){ return 'https://html.duckduckgo.com/html/?q=' + encodeURIComponent(q); }
+async function fetchViaProxy(target){
+  let lastErr;
+  for(const mk of WEB_PROXIES){
+    try{
+      const ctrl = new AbortController();
+      const to = setTimeout(()=>ctrl.abort(), 12000);
+      const r = await fetch(mk(target), {signal: ctrl.signal, headers:{'Accept':'text/html'}});
+      clearTimeout(to);
+      if(r.ok){ const t = await r.text(); if(t && t.length>200) return t; }
+    }catch(e){ lastErr = e; }
+  }
+  throw lastErr || new Error('所有代理均不可用');
+}
+function parseDdg(html){
+  const doc = new DOMParser().parseFromString(html||'', 'text/html');
+  const out = [];
+  doc.querySelectorAll('a.result__a').forEach(a=>{
+    const href = a.getAttribute('href')||'';
+    let url = href;
+    const m = href.match(/uddg=([^&]+)/);
+    if(m){ try{ url = decodeURIComponent(m[1]); }catch(e){} }
+    const block = a.parentElement || a;
+    const snipEl = block.querySelector('.result__snippet');
+    const snippet = snipEl ? snipEl.textContent.trim() : '';
+    const title = a.textContent.trim();
+    if(title || snippet) out.push({title, url, snippet});
+  });
+  return out;
+}
+function charNGrams(text, n){
+  n = n||3;
+  const low = (text||'').toLowerCase();
+  const arr = Array.from(low).filter(c=>/[a-z0-9\u4e00-\u9fff]/.test(c));
+  if(arr.length < n) return new Set([arr.join('')]);
+  const s = new Set();
+  for(let i=0;i<=arr.length-n;i++) s.add(arr.slice(i,i+n).join(''));
+  return s;
+}
+function ngramSim(a, b){
+  const sa = charNGrams(a), sb = charNGrams(b);
+  if(!sa.size || !sb.size) return 0;
+  let inter=0; sa.forEach(x=>{ if(sb.has(x)) inter++; });
+  return inter/(sa.size+sb.size-inter);
+}
+function pickSentences(text, topN){
+  const s = splitSentences(text).filter(x=>x.trim().length>=20);
+  const uniq = [...new Set(s)];
+  return uniq.sort((a,b)=>b.length-a.length).slice(0, topN);
+}
+async function webCheckParagraph(para){
+  const clean = (para||'').trim().replace(/^"|"$/g,'');
+  const q = '"' + clean + '"';
+  try{
+    const html = await fetchViaProxy(ddgUrl(q));
+    const results = parseDdg(html).slice(0,5);
+    let best = 0;
+    results.forEach(r=>{ const s = ngramSim(clean, r.snippet||''); if(s>best) best=s; });
+    return {checked:true, found: results.length>0, results, best, query:q};
+  }catch(e){
+    return {checked:true, found:false, results:[], best:0, query:q, error:String(e&&e.message||e)};
+  }
+}
+async function doWebSearch(text){
+  const sents = pickSentences(text, 8);
+  const checks = [];
+  for(let i=0;i<sents.length;i++){
+    const btn = document.getElementById('runBtn');
+    if(btn) btn.textContent = `联网搜索中… (${i+1}/${sents.length})`;
+    const c = await webCheckParagraph(sents[i]);
+    checks.push(c);
+    await new Promise(r=>setTimeout(r, 350)); // 礼貌性间隔，降低被限流概率
+  }
+  return {checks};
+}
+function renderWeb(web){
+  const el = document.getElementById('webBlock');
+  if(!web || web.error){ el.innerHTML = '<div class="web-err">⚠️ 联网搜索失败：'+(web&&web.error||'未知错误')+'。可改用 Python 版（hallucination-detector webcheck）获得更稳定的联网核查。</div>'; return; }
+  const checked = web.checks ? web.checks.length : 0;
+  const found = web.checks ? web.checks.filter(c=>c.found).length : 0;
+  let html = `<div class="sub-note">已搜索代表性段落 ${checked} 个；网上命中（存在相同或高度相似内容）${found} 个。</div>`;
+  const hits = (web.checks||[]).filter(c=>c.found);
+  if(!hits.length){ html += '<div class="empty">✓ 在所搜索的段落中，未发现网上存在一模一样的文字段落（仅供参考）。</div>'; }
+  else{
+    hits.forEach(c=>{
+      const sim = Math.round((c.best||0)*100);
+      html += `<div class="web-finding"><span class="tag">匹配度 ${sim}% · 查询</span>`+
+        `<div class="snip">${escapeHtml(c.query)}</div>`;
+      (c.results||[]).slice(0,3).forEach(r=>{
+        html += `<div><a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.title||r.url)}</a></div>`+
+          `<div class="snip">${escapeHtml((r.snippet||'').slice(0,160))}</div>`;
+      });
+      html += `</div>`;
+    });
+  }
+  el.innerHTML = html;
 }
 
 initUploaders();
