@@ -25,6 +25,7 @@ from .pattern_analyzer import PatternAnalyzer
 from .fact_checker import FactChecker
 from .scorer import ConfidenceScorer
 from .reporter import Reporter
+from .plagiarism_checker import PlagiarismChecker
 
 __version__ = "1.0.0"
 __author__ = "Ethan Xu"
@@ -39,4 +40,5 @@ __all__ = [
     "FactChecker",
     "ConfidenceScorer",
     "Reporter",
+    "PlagiarismChecker",
 ]
