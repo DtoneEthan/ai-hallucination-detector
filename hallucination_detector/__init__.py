@@ -26,6 +26,7 @@ from .fact_checker import FactChecker
 from .scorer import ConfidenceScorer
 from .reporter import Reporter
 from .plagiarism_checker import PlagiarismChecker
+from .web_search import WebSearcher
 
 __version__ = "1.0.0"
 __author__ = "Ethan Xu"
@@ -41,4 +42,5 @@ __all__ = [
     "ConfidenceScorer",
     "Reporter",
     "PlagiarismChecker",
+    "WebSearcher",
 ]
