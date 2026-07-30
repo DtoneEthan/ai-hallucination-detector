@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>论文查重 · 免费试用版</title>
+<meta name="description" content="免费在线论文查重（试用版）：上传待查论文与参考文档，本地计算重复率与重复片段，无需联网、隐私安全。" />
+<style>
+  :root{
+    --bg:#ffffff; --fg:#1f2328; --muted:#656d76; --line:#d0d7de;
+    --brand:#5b21b6; --brand-soft:#f3eefb;
+    --crit:#e0245e; --high:#fb8500; --med:#eab308; --low:#2da44e; --info:#0969da;
+    --card:#f6f8fa;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Helvetica,Arial,sans-serif;
+       color:var(--fg);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
+  a{color:var(--brand);text-decoration:none} a:hover{text-decoration:underline}
+  .wrap{max-width:880px;margin:0 auto;padding:0 20px}
+  header.nav{border-bottom:1px solid var(--line)}
+  .nav .wrap{display:flex;align-items:center;justify-content:space-between;height:56px}
+  .logo{font-weight:700;font-size:17px;display:flex;align-items:center;gap:8px}
+  .logo .dot{width:11px;height:11px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 4px var(--brand-soft)}
+  .nav a.lnk{font-size:13px;color:var(--muted);margin-left:16px}
+  .hero{padding:38px 0 14px;text-align:center}
+  .hero h1{font-size:32px;letter-spacing:-.4px}
+  .hero h1 .accent{color:var(--brand)}
+  .hero p.sub{color:var(--muted);margin:12px auto 0;max-width:600px;font-size:15px}
+  /* trial banner */
+  .banner{margin:16px auto 0;max-width:880px;border:1px solid #f0b27a;background:#fff4e6;border-radius:12px;
+    padding:12px 16px;font-size:13.5px;color:#8a4b00;display:flex;gap:10px;align-items:flex-start}
+  .banner b{color:#9a3412}
+  section{padding:22px 0}
+  .input-card{border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--card)}
+  .field-label{font-weight:700;font-size:14px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .field-label .tag{font-size:11px;font-weight:600;color:#fff;background:var(--brand);border-radius:6px;padding:2px 8px}
+  textarea{width:100%;min-height:170px;resize:vertical;border:1px solid var(--line);border-radius:10px;
+    padding:14px;font-size:14.5px;font-family:inherit;line-height:1.55;background:#fff;color:var(--fg)}
+  textarea:focus{outline:none;border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-soft)}
+  .toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-top:12px}
+  .examples{display:flex;gap:8px;flex-wrap:wrap}
+  .examples button{font-size:13px;border:1px solid var(--line);background:#fff;color:var(--fg);padding:7px 12px;border-radius:8px;cursor:pointer}
+  .examples button:hover{background:var(--card)}
+  .run{background:var(--brand);color:#fff;border:0;padding:11px 26px;border-radius:9px;font-weight:700;font-size:15px;cursor:pointer}
+  .run:hover{background:#4c1d95}
+  .run:disabled{opacity:.6;cursor:default}
+  .count{font-size:12px;color:var(--muted)}
+  .note{font-size:12.5px;color:var(--muted);background:#fff8e6;border:1px solid #f0d58c;border-radius:10px;padding:10px 14px;margin-top:14px}
+  .result{margin-top:8px}
+  .score-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:18px}
+  .score-head{display:flex;align-items:center;justify-content:space-between;padding:18px 22px;background:var(--card);border-bottom:1px solid var(--line);flex-wrap:wrap;gap:14px}
+  .gauge{display:flex;align-items:center;gap:14px}
+  .gauge svg{width:120px;height:120px}
+  .gauge .score{font-size:30px;font-weight:800}
+  .gauge .lvl{font-weight:700;letter-spacing:.5px;font-size:14px}
+  .sev-bars{margin-left:auto;min-width:240px;flex:1}
+  .sev-row{display:flex;align-items:center;gap:8px;font-size:13px;margin:5px 0}
+  .sev-row .lab{width:120px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .sev-row .bar{flex:1;height:9px;border-radius:5px;background:var(--card);overflow:hidden}
+  .sev-row .bar i{display:block;height:100%}
+  .sev-row .num{width:46px;text-align:right;font-variant-numeric:tabular-nums}
+  .block{padding:18px 22px}
+  .block h3{font-size:15px;margin-bottom:12px;color:var(--muted)}
+  .finding{border-left:4px solid var(--line);padding:9px 13px;margin:9px 0;background:var(--card);border-radius:0 8px 8px 0;font-size:13.5px}
+  .finding .tag{font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--crit)}
+  .finding .msg{margin:2px 0}
+  .finding .snip{color:var(--muted);font-size:12.5px}
+  .empty{color:var(--low);font-weight:600;padding:8px 0}
+  footer{padding:30px 0 40px;text-align:center;color:var(--muted);font-size:13px;border-top:1px solid var(--line);margin-top:30px}
+  footer .studio{font-weight:700;color:var(--brand);margin-top:8px}
+  .hide{display:none!important}
+  /* upload */
+  .dropzone{border:2px dashed var(--line);border-radius:12px;padding:16px;margin:8px 0 4px;text-align:center;color:var(--muted);cursor:pointer;background:#fff;transition:.15s}
+  .dropzone:hover,.dropzone.drag{border-color:var(--brand);background:var(--brand-soft)}
+  .dropzone .big{font-size:14px;color:var(--fg)}
+  .dropzone .fmt{font-size:11.5px;margin-top:6px}
+  #fileInfo,#refInfo{font-size:12.5px;margin:4px 0 8px;font-weight:600;color:var(--brand)}
+  /* ref list */
+  .reflist{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .chip{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);border-radius:20px;padding:5px 10px;font-size:12.5px}
+  .chip .x{cursor:pointer;color:var(--muted);font-weight:700;padding:0 2px}
+  .chip .x:hover{color:var(--crit)}
+  .chip .pct{color:var(--brand);font-weight:700}
+  .sub-note{font-size:12px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="wrap">
+    <div class="logo"><span class="dot"></span> 论文查重</div>
+    <div>
+      <a class="lnk" href="detect.html">幻觉检测</a>
+      <a class="lnk" href="index.html">展示页</a>
+      <a class="lnk" href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">GitHub</a>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="wrap">
+    <h1>论文查重 · <span class="accent">免费试用版</span></h1>
+    <p class="sub">上传待查论文与参考文档，浏览器本地计算重复率与重复片段。不联网、不上传服务器、隐私安全。</p>
+  </div>
+</div>
+
+<div class="banner">
+  <span>⚠️</span>
+  <div><b>免费试用版 · 暂无法保证准确率。</b> 本工具仅做本地近似比对（你提供的参考文档 + 论文内部重复），<b>不能</b>接入知网 / 万方 / Turnitin 等学术数据库，也查不到未提供的资料。结果仅供参考，正式用途请使用学校或机构指定的正规查重服务。</div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="input-card">
+      <div class="field-label"><span class="tag">待查</span> 论文 / 待检测文本</div>
+      <div class="dropzone" id="paperDrop">
+        <div class="big">📄 拖拽论文文件到此处，或点击选择</div>
+        <div class="fmt">支持 .txt · .md · .html · .pdf · .docx · .csv · .json 等（最大 5MB）</div>
+      </div>
+      <input type="file" id="paperInput" accept=".txt,.md,.markdown,.text,.html,.htm,.xml,.csv,.json,.pdf,.docx,.tex,.rst,.log,.tsv,.yaml,.yml" style="display:none" />
+      <div id="fileInfo"></div>
+      <textarea id="paper" placeholder="在此粘贴待查重的论文 / 文本（中英文均可），或上传文档……"></textarea>
+
+      <div class="field-label" style="margin-top:18px"><span class="tag">参考</span> 参考文档库（可多选，用于比对）</div>
+      <div class="dropzone" id="refDrop">
+        <div class="big">📚 拖拽参考文献 / 范文到此处，或点击选择（可多选）</div>
+        <div class="fmt">上传你认为可能被参考 / 抄袭的文档；未上传参考文档时只检测论文内部重复</div>
+      </div>
+      <input type="file" id="refInput" multiple accept=".txt,.md,.markdown,.text,.html,.htm,.xml,.csv,.json,.pdf,.docx,.tex,.rst,.log,.tsv,.yaml,.yml" style="display:none" />
+      <div id="refInfo"></div>
+      <div id="refList" class="reflist"></div>
+      <div class="sub-note">提示：参考文档越多、越贴近真实来源，结果越有意义。比对在本地完成，文件不会上传。</div>
+
+      <div class="toolbar">
+        <div class="examples">
+          <button onclick="fillExample()">载入示例（含重复）</button>
+          <button onclick="clearAll()">清空</button>
+        </div>
+        <span class="count" id="count">0 字</span>
+        <button class="run" id="runBtn" onclick="runCheck()">开始查重</button>
+      </div>
+      <div class="note">
+        🔍 算法说明：将文本切成字符 / 词语 n-gram 指纹，计算待查论文与参考文档的重合比例（Jaccard 相似度）以及论文内部的自我重复率，并列出高度重叠的句子片段。<b>这是近似启发式，非权威查重结论。</b>
+      </div>
+    </div>
+
+    <div class="result hide" id="result">
+      <div class="score-card">
+        <div class="score-head">
+          <div class="gauge">
+            <svg viewBox="0 0 120 120">
+              <circle cx="60" cy="60" r="52" fill="none" stroke="#f6f8fa" stroke-width="11"/>
+              <circle id="gaugeArc" cx="60" cy="60" r="52" fill="none" stroke="#2da44e" stroke-width="11"
+                stroke-linecap="round" stroke-dasharray="326.7" stroke-dashoffset="326.7"
+                transform="rotate(-90 60 60)"/>
+            </svg>
+            <div>
+              <div class="cap" style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">总重复率</div>
+              <div class="score" id="rateNum">0%</div>
+              <div class="lvl" id="rateLvl">低</div>
+            </div>
+          </div>
+          <div class="sev-bars" id="sevBars"></div>
+        </div>
+        <div class="block">
+          <h3>与各参考文档的相似度</h3>
+          <div id="perRef"></div>
+        </div>
+        <div class="block">
+          <h3>疑似重复片段（与参考文档高度重叠的句子，按相似度排序）</h3>
+          <div id="fragments"></div>
+        </div>
+      </div>
+      <div class="toolbar" style="margin-top:14px;justify-content:flex-end">
+        <button class="run" onclick="downloadReport()">下载查重报告 (.md)</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p>论文查重（试用版）· 本地近似比对，暂无法保证准确率，正式用途请使用正规查重服务。</p>
+    <p><a href="https://github.com/DtoneEthan/ai-hallucination-detector" target="_blank" rel="noopener">github.com/DtoneEthan/ai-hallucination-detector</a> · MIT License</p>
+    <p class="studio">Ethan X 工作室出品 · Produced by Ethan X Studio</p>
+  </div>
+</footer>
+
+<script>
+/* ============================================================
+   免费论文查重（纯前端 · 本地近似比对）
+   - n-gram 指纹（中文按字 4-gram，英文按词 3-gram）
+   - 总重复率 = 待查论文 n-gram 被参考库并集覆盖的比例
+   - 自重复率 = 论文内部句子级重叠比例
+   - 重复片段 = 与某篇参考高度重叠的句子
+   ============================================================ */
+
+// ---------- 文本分句 ----------
+function splitSentences(text){
+  text = (text||'').trim();
+  if(!text) return [];
+  const pattern = /(?<=[.!?])\s+|(?<=[.!?])$|(?<=[。！？；])/;
+  const raw = text.split(pattern);
+  const sentences = [];
+  for(const part of raw){
+    const subs = part.split(/\n{2,}/);
+    for(const sp of subs){
+      const s = sp.trim();
+      if(!s) continue;
+      const lines = s.split('\n');
+      let cur = '';
+      for(const line of lines){
+        const l = line.trim();
+        if(!l) continue;
+        if(cur){ if(/[.!?。！？；]$/.test(cur)){ sentences.push(cur); cur = l; } else cur += ' ' + l; }
+        else cur = l;
+      }
+      if(cur) sentences.push(cur);
+    }
+  }
+  return sentences.length ? sentences : [text];
+}
+
+// ---------- n-gram 指纹 ----------
+function buildNGrams(text){
+  const low = (text||'').toLowerCase();
+  const cjk = low.replace(/[a-z0-9]/g,'');
+  const eng = low.replace(/[^a-z0-9\s]/g,'');
+  const set = new Set();
+  // 中文：字符 4-gram
+  const cArr = Array.from(cjk.replace(/\s+/g,''));
+  for(let i=0;i<=cArr.length-4;i++) set.add('c:'+cArr.slice(i,i+4).join(''));
+  // 英文：词 3-gram
+  const words = eng.split(/\s+/).filter(Boolean);
+  for(let i=0;i<=words.length-3;i++) set.add('e:'+words.slice(i,i+3).join(' '));
+  return set;
+}
+function jaccard(a,b){
+  if(!a.size || !b.size) return 0;
+  const small = a.size<b.size?a:b, large = a.size<b.size?b:a;
+  let inter=0; small.forEach(x=>{ if(large.has(x)) inter++; });
+  return inter/(a.size+b.size-inter);
+}
+function countIntersect(a,b){
+  const small = a.size<b.size?a:b, large = a.size<b.size?b:a;
+  let c=0; small.forEach(x=>{ if(large.has(x)) c++; });
+  return c;
+}
+
+// ---------- 核心查重 ----------
+function analyzePlagiarism(paper, refs){
+  const pSet = buildNGrams(paper);
+  const refUnion = new Set();
+  const perRef = [];
+  for(const r of refs){
+    const rs = buildNGrams(r.text);
+    rs.forEach(g=>refUnion.add(g));
+    perRef.push({name:r.name, jaccard: jaccard(pSet, rs)});
+  }
+  perRef.sort((a,b)=>b.jaccard-a.jaccard);
+  const overall = pSet.size ? countIntersect(pSet, refUnion)/pSet.size : 0;
+
+  // 论文句子预计算
+  const sents = splitSentences(paper).filter(s=>s.trim().length>6);
+  const N = sents.length;
+  const sentSets = sents.map(s=>buildNGrams(s));
+  const df = {};
+  sentSets.forEach(g=>g.forEach(x=>df[x]=(df[x]||0)+1));
+  const kept = sentSets.map(g=>{ const k=new Set(); g.forEach(x=>{ if(df[x] <= Math.max(2, N*0.25)) k.add(x); }); return k; });
+  let dupSent=0;
+  const MAXN=500;
+  const idxs = [...Array(N).keys()];
+  const compare = N>MAXN ? idxs.filter((_,i)=> i % Math.ceil(N/MAXN)===0) : idxs;
+  for(const i of compare){
+    if(kept[i].size<5) continue;
+    let maxJ=0;
+    for(const j of idxs){ if(i===j || kept[j].size<5) continue; const jj=jaccard(kept[i],kept[j]); if(jj>maxJ)maxJ=jj; }
+    if(maxJ>=0.55) dupSent++;
+  }
+  const selfRate = compare.length ? dupSent/compare.length : 0;
+
+  // 重复片段：用「句子被参考覆盖的比例」判定（比整篇 Jaccard 更准确）
+  const frag=[];
+  for(const r of perRef){
+    if(r.jaccard < 0.02) continue;
+    const rs = buildNGrams(refs.find(x=>x.name===r.name).text);
+    for(let i=0;i<N;i++){
+      if(sents[i].length<12) continue;
+      const cov = sentSets[i].size ? countIntersect(sentSets[i], rs)/sentSets[i].size : 0;
+      if(cov>=0.5) frag.push({ref:r.name, text:sents[i], score:cov});
+    }
+  }
+  frag.sort((a,b)=>b.score-a.score);
+  return {overall, selfRate, perRef, fragments:frag.slice(0,30), paperLen:paper.length, refCount:refs.length};
+}
+
+// ---------- UI ----------
+function rateColor(r){ return r>=0.5 ? '#e0245e' : r>=0.3 ? '#fb8500' : r>=0.15 ? '#eab308' : '#2da44e'; }
+function rateLevel(r){ return r>=0.5 ? '高' : r>=0.3 ? '中' : r>=0.15 ? '偏低' : '低'; }
+let LAST = null;
+
+function fillExample(){
+  const paper = `人工智能在教育领域的应用日益广泛。许多研究机构指出，个性化学习能够显著提升学生的学习效率。\n\n根据 Wang 等人（2023）的研究，基于深度学习的自适应系统可以将测试成绩提高约 23%。该研究在三个城市的 12 所学校开展，样本量为 1840 名学生。\n\n然而，数据隐私问题仍然是部署此类系统的主要障碍。本文提出的框架在保护隐私的同时，保持了较高的推荐精度。实验结果表明，该方法的 F1 值达到 0.91。\n\n深度学习模型需要大量标注数据。Transformer 架构自 2017 年提出以来，已成为自然语言处理的主流方法。注意力机制使得模型能够捕捉长距离依赖关系。`;
+  // 参考文档：包含与论文高度相似的句子（模拟被参考/抄袭来源）
+  const ref1 = `人工智能在教育领域的应用日益广泛。许多研究机构指出，个性化学习能够显著提升学生的学习效率。根据 Wang 等人（2023）的研究，基于深度学习的自适应系统可以将测试成绩提高约 23%。该研究在三个城市的 12 所学校开展，样本量为 1840 名学生。深度学习模型需要大量标注数据。Transformer 架构自 2017 年提出以来，已成为自然语言处理的主流方法。`;
+  const ref2 = `气候变化对农业生产构成了严重威胁。极端天气事件频发导致粮食减产，需要采取适应性措施。本研究表明，灌溉效率的提升可以缓解部分负面影响。`;
+  document.getElementById('paper').value = paper;
+  REFS = [{name:'参考文献1.txt', text:ref1}, {name:'参考文献2.txt', text:ref2}];
+  renderRefs();
+  updateCount();
+}
+function clearAll(){ document.getElementById('paper').value=''; REFS=[]; renderRefs(); updateCount(); document.getElementById('result').classList.add('hide'); }
+function updateCount(){ const v=document.getElementById('paper').value; document.getElementById('count').textContent = v.length + ' 字'; }
+document.getElementById('paper').addEventListener('input', updateCount);
+
+function runCheck(){
+  const text = document.getElementById('paper').value;
+  const resEl = document.getElementById('result');
+  if(!text.trim()){ alert('请先粘贴待查论文，或点击「载入示例」。'); return; }
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true; btn.textContent = '查重中…';
+  setTimeout(()=>{
+    try{
+      LAST = analyzePlagiarism(text, REFS);
+      render(LAST);
+      resEl.classList.remove('hide');
+      resEl.scrollIntoView({behavior:'smooth', block:'start'});
+    }catch(e){ alert('查重出错：'+e.message); }
+    btn.disabled = false; btn.textContent = '开始查重';
+  }, 30);
+}
+
+function render(R){
+  const circ = 326.7;
+  const off = circ * (1 - R.overall);
+  const arc = document.getElementById('gaugeArc');
+  arc.setAttribute('stroke-dashoffset', off.toFixed(1));
+  const col = rateColor(R.overall);
+  arc.setAttribute('stroke', col);
+  document.getElementById('rateNum').textContent = Math.round(R.overall*100)+'%';
+  document.getElementById('rateNum').style.color = col;
+  document.getElementById('rateLvl').textContent = rateLevel(R.overall);
+  document.getElementById('rateLvl').style.color = col;
+
+  // severity-like bars: 总重复率 + 自重复率
+  let html = '';
+  html += barRow('总重复率（参考库）', R.overall, '与上传参考文档的重合比例');
+  html += barRow('论文自重复率', R.selfRate, '论文内部句子级重复比例');
+  if(R.refCount===0) html += `<div class="sub-note">未上传参考文档，仅显示论文内部自重复率。上传参考文档可获得「总重复率」。</div>`;
+  document.getElementById('sevBars').innerHTML = html;
+
+  // per-ref
+  const pr = document.getElementById('perRef');
+  if(!R.perRef.length){ pr.innerHTML = '<div class="empty">未上传参考文档。</div>'; }
+  else{
+    pr.innerHTML = R.perRef.map(r=>barRow(r.name, r.jaccard, '相似度')).join('');
+  }
+
+  // fragments
+  const fr = document.getElementById('fragments');
+  if(!R.fragments.length){ fr.innerHTML = '<div class="empty">✓ 未发现与参考文档高度重叠的句子片段。</div>'; }
+  else{
+    fr.innerHTML = R.fragments.map(f=>{
+      const pct = Math.round(f.score*100);
+      return `<div class="finding"><span class="tag">相似度 ${pct}% · 来自 ${escapeHtml(f.ref)}</span>`+
+             `<div class="snip">“${escapeHtml(f.text.slice(0,200))}”</div></div>`;
+    }).join('');
+  }
+}
+function barRow(label, val, sub){
+  const pct = Math.round(val*100);
+  const col = rateColor(val);
+  return `<div class="sev-row"><span class="lab" title="${escapeHtml(label)}">${escapeHtml(label)}</span>`+
+         `<span class="bar"><i style="width:${pct}%;background:${col}"></i></span>`+
+         `<span class="num">${pct}%</span></div>`;
+}
+function escapeHtml(s){
+  return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function downloadReport(){
+  if(!LAST) return;
+  const R = LAST;
+  const lines = [];
+  lines.push('# 论文查重报告（免费试用版 · 本地近似比对）');
+  lines.push('');
+  lines.push('> ⚠️ 本工具为免费试用版，仅做本地近似比对，暂无法保证准确率，不能替代正规查重服务。');
+  lines.push('');
+  lines.push(`**总重复率（参考库重合）：** ${Math.round(R.overall*100)}%`);
+  lines.push(`**论文自重复率：** ${Math.round(R.selfRate*100)}%`);
+  lines.push(`**参考文档数：** ${R.refCount}`);
+  lines.push(`**待查论文字数：** ${R.paperLen}`);
+  lines.push('');
+  lines.push('## 与各参考文档相似度');
+  if(R.perRef.length) R.perRef.forEach(r=>lines.push(`- ${r.name}: ${Math.round(r.jaccard*100)}%`));
+  else lines.push('- 未上传参考文档');
+  lines.push('');
+  lines.push('## 疑似重复片段');
+  if(R.fragments.length) R.fragments.forEach((f,i)=>{
+    lines.push(`${i+1}. **[${Math.round(f.score*100)}% · ${f.ref}]** ${f.text.slice(0,180)}`);
+  });
+  else lines.push('- 未发现高度重叠片段');
+  lines.push('');
+  lines.push('---');
+  lines.push('*本地计算，文件未上传服务器。Ethan X 工作室出品。*');
+  const blob = new Blob([lines.join('\n')], {type:'text/markdown;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'plagiarism-report.md';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ---------- 参考文档库 ----------
+let REFS = [];
+function renderRefs(){
+  const el = document.getElementById('refList');
+  el.innerHTML = REFS.map((r,i)=>`<span class="chip">${escapeHtml(r.name)}<span class="x" onclick="removeRef(${i})">×</span></span>`).join('');
+}
+function removeRef(i){ REFS.splice(i,1); renderRefs(); }
+
+// ---------- 文件上传（论文 + 参考）----------
+const UPLOAD_TEXT = /\.(txt|text|md|markdown|html?|xml|csv|tsv|json|tex|rst|log|yaml|yml|js|ts|jsx|tsx|py|java|c|cpp|h|hpp|go|rs|rb|php|css|scss|sql|sh|bat|ps1)$/i;
+const MAX_FILE = 5*1024*1024;
+function initUploaders(){
+  bindDrop('paperDrop','paperInput', handlePaper);
+  bindDrop('refDrop','refInput', handleRef, true);
+}
+function bindDrop(dzId, inpId, handler, multi){
+  const dz = document.getElementById(dzId);
+  const inp = document.getElementById(inpId);
+  if(!dz || !inp) return;
+  dz.addEventListener('click', ()=>inp.click());
+  inp.addEventListener('change', e=>{ const fs=e.target.files; if(fs){ for(const f of fs) handler(f); } e.target.value=''; });
+  ['dragenter','dragover'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.add('drag');}));
+  ['dragleave','drop'].forEach(ev=>dz.addEventListener(ev, e=>{e.preventDefault();dz.classList.remove('drag');}));
+  dz.addEventListener('drop', e=>{ const fs=e.dataTransfer&&e.dataTransfer.files; if(fs){ for(const f of fs) handler(f); } });
+}
+function paperInfo(m,c){ const el=document.getElementById('fileInfo'); if(el){ el.textContent=m; el.style.color=c||'var(--brand)'; } }
+function refInfo(m,c){ const el=document.getElementById('refInfo'); if(el){ el.textContent=m; el.style.color=c||'var(--brand)'; } }
+
+function handlePaper(file){
+  if(file.size>MAX_FILE){ paperInfo('文件过大（>5MB），请改用更小文件或粘贴文本。','#e0245e'); return; }
+  readFile(file, text=>{ document.getElementById('paper').value=text; updateCount(); paperInfo('已载入 '+file.name+'（'+text.length+' 字），点击「开始查重」。','var(--low)'); });
+}
+function handleRef(file){
+  if(file.size>MAX_FILE){ refInfo('文件过大（>5MB），已跳过：'+file.name,'#e0245e'); return; }
+  readFile(file, text=>{ REFS.push({name:file.name, text}); renderRefs(); refInfo('已加入参考库：'+file.name+'（共 '+REFS.length+' 篇）','var(--low)'); }, true);
+}
+function readFile(file, cb, isRef){
+  const name=file.name, ext=(name.split('.').pop()||'').toLowerCase();
+  const info = isRef ? refInfo : paperInfo;
+  if(UPLOAD_TEXT.test(name)){
+    info('正在读取 '+name+'…');
+    const r=new FileReader();
+    r.onload=e=>cb(String(e.target.result||''));
+    r.onerror=()=>info('读取失败，请重试或粘贴文本。','#e0245e');
+    r.readAsText(file,'utf-8');
+    return;
+  }
+  if(ext==='pdf'){ info('正在解析 PDF：'+name+'…'); loadLib('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','PDF',()=>extractPdf(file, isRef)); return; }
+  if(ext==='docx'){ info('正在解析 Word：'+name+'…'); loadLib('https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js','Word',()=>extractDocx(file, isRef)); return; }
+  info('暂不支持 .'+ext+' 格式（参考文档已跳过）。支持 .txt/.md/.html/.pdf/.docx/.csv/.json 等。','#e0245e');
+}
+function loadLib(src,label,cb){
+  if(window.__libs&&window.__libs[src]){ cb(); return; }
+  const info=refInfo; info('加载 '+label+' 解析库…');
+  const s=document.createElement('script'); s.src=src;
+  s.onload=()=>{ window.__libs=window.__libs||{}; window.__libs[src]=1; cb(); };
+  s.onerror=()=>info(label+' 解析库加载失败（可能离线）。请复制文本粘贴。','#e0245e');
+  document.head.appendChild(s);
+}
+function extractPdf(file, isRef){
+  if(!window.pdfjsLib){ refInfo('PDF 解析库未就绪，请复制文本粘贴。','#e0245e'); return; }
+  try{ pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js'; }catch(e){}
+  const r=new FileReader();
+  r.onload=async e=>{
+    try{
+      const buf=new Uint8Array(e.target.result);
+      const pdf=await pdfjsLib.getDocument({data:buf}).promise;
+      let txt=''; const n=Math.min(pdf.numPages,120);
+      for(let i=1;i<=n;i++){ const pg=await pdf.getPage(i); const c=await pg.getTextContent(); txt+=(c.items||[]).map(it=>it.str||'').join(' ')+'\n'; }
+      if(isRef){ REFS.push({name:file.name,text:txt}); renderRefs(); refInfo('已加入参考库：'+file.name+'（共 '+REFS.length+' 篇）','var(--low)'); }
+      else{ document.getElementById('paper').value=txt; updateCount(); paperInfo('已载入 '+file.name+'（'+txt.length+' 字）','var(--low)'); }
+    }catch(err){ refInfo('PDF 解析失败：'+(err&&err.message||err),'#e0245e'); }
+  };
+  r.onerror=()=>refInfo('PDF 读取失败。','#e0245e');
+  r.readAsArrayBuffer(file);
+}
+function extractDocx(file, isRef){
+  if(!window.mammoth){ refInfo('Word 解析库未就绪，请复制文本粘贴。','#e0245e'); return; }
+  const r=new FileReader();
+  r.onload=e=>{
+    mammoth.extractRawText({arrayBuffer:e.target.result}).then(res=>{
+      const txt=res.value||'';
+      if(isRef){ REFS.push({name:file.name,text:txt}); renderRefs(); refInfo('已加入参考库：'+file.name+'（共 '+REFS.length+' 篇）','var(--low)'); }
+      else{ document.getElementById('paper').value=txt; updateCount(); paperInfo('已载入 '+file.name+'（'+txt.length+' 字）','var(--low)'); }
+    }).catch(err=>refInfo('Word 解析失败：'+(err&&err.message||err),'#e0245e'));
+  };
+  r.onerror=()=>refInfo('Word 读取失败。','#e0245e');
+  r.readAsArrayBuffer(file);
+}
+
+initUploaders();
+</script>
+</body>
+</html>
